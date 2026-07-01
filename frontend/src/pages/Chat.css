@@ -1,0 +1,247 @@
+.chat-layout {
+  display: flex;
+  height: 100vh;
+  background-color: #f0f2f5;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.sidebar {
+  width: 320px;
+  background: white;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: 1rem;
+  background: #f0f2f5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ddd;
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.logout-btn:hover {
+  background: #e0e0e0;
+}
+
+.new-chat-form {
+  padding: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.new-chat-form input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  outline: none;
+}
+
+.new-chat-form input:focus {
+  border-color: #4CAF50;
+}
+
+.new-chat-form button {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.conversation-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.conversation-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f2f5;
+  transition: background 0.2s;
+}
+
+.conversation-item:hover {
+  background: #f5f6f6;
+}
+
+.conversation-item.active {
+  background: #ebebeb;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #4CAF50;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-right: 1rem;
+}
+
+.conv-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.conv-info h4 {
+  margin: 0 0 0.25rem 0;
+  color: #333;
+}
+
+.conv-info p {
+  margin: 0;
+  color: #777;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #efe7dd; /* Classic chat background */
+}
+
+.chat-header {
+  padding: 1rem 1.5rem;
+  background: white;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+}
+
+.chat-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.messages-container {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.message-wrapper {
+  display: flex;
+  width: 100%;
+}
+
+.message-wrapper.sent {
+  justify-content: flex-end;
+}
+
+.message-wrapper.received {
+  justify-content: flex-start;
+}
+
+.message {
+  max-width: 65%;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.message-wrapper.sent .message {
+  background: #dcf8c6;
+  border-bottom-right-radius: 0;
+}
+
+.message-wrapper.received .message {
+  background: white;
+  border-bottom-left-radius: 0;
+}
+
+.message p {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.95rem;
+  color: #333;
+  word-wrap: break-word;
+}
+
+.timestamp {
+  font-size: 0.7rem;
+  color: #888;
+  float: right;
+  margin-left: 1rem;
+}
+
+.message-form {
+  padding: 1rem 1.5rem;
+  background: #f0f2f5;
+  display: flex;
+  gap: 1rem;
+}
+
+.message-form input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 24px;
+  outline: none;
+  font-size: 1rem;
+}
+
+.message-form button {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 24px;
+  padding: 0.5rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.message-form button:disabled {
+  background: #a5d6a7;
+  cursor: not-allowed;
+}
+
+.no-chat-selected {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  font-size: 1.1rem;
+}
