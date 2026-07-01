@@ -1,0 +1,9 @@
+@echo off
+echo Starting Docker Compose...
+docker compose up -d
+
+echo Starting Backend...
+start cmd /k "cd backend && venv\Scripts\activate && python manage.py runserver"
+
+echo Starting Frontend...
+start cmd /k "cd frontend && npm run dev"
