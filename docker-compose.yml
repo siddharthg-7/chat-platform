@@ -15,8 +15,6 @@ services:
       POSTGRES_USER: ${DATABASE_USER:-postgres}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
       POSTGRES_DB: ${DATABASE_NAME:-postgres}
-    env_file:
-      - backend/.env
     ports:
       - "5432:5432"
     volumes:
