@@ -3,28 +3,35 @@
 @tailwind utilities;
 
 body {
-  background-color: #111b21;
-  color: #e9edef;
+  /* Swapping WhatsApp green-tinted darks for a modern, sleek slate-900 */
+  background-color: #0f172a; 
+  color: #f8fafc;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   margin: 0;
   padding: 0;
   overflow: hidden;
 }
 
-/* Custom Scrollbar for WhatsApp style */
+/* Premium, minimal custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(99, 102, 241, 0.2); /* Subtle indigo accent */
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.4);
 }
 
-/* WhatsApp Chat Doodle Background */
+/* Replaced the WhatsApp doodle pattern with a subtle, modern tech grid */
 .wa-bg-pattern {
-  background-color: #0b141a;
-  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20.5V18H0v-2h20v-2H0v-2h20v-2H0V8h20V6H0V4h20V2H0V0h22v20h2V0h2v20h2V0h2v20h2V0h2v20h2V0h2v20h2v2H20v-1.5zM0 20h2v20H0V20zm4 0h2v20H4V20zm4 0h2v20H8V20zm4 0h2v20h-2V20zm4 0h2v20h-2V20zm4 4h20v2H20v-2zm0 4h20v2H20v-2zm0 4h20v2H20v-2zm0 4h20v2H20v-2z' fill='%23ffffff' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+  background-color: #0b0f19;
+  background-image: linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
 }
