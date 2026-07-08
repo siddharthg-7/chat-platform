@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, MoreVertical, Paperclip, Send, Smile, Users, CheckCheck, Reply, MoreHorizontal } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -49,26 +49,56 @@ const MessageActions = ({ onReact }) => (
   </motion.div>
 );
 
-/** Single message bubble */
 const Message = ({ msg }) => {
   const [hovered, setHovered] = useState(false);
+  const [showToolbar, setShowToolbar] = useState(false);
   const [reactions, setReactions] = useState(msg.reactions);
   const isOut = msg.type === 'out';
+  const toolbarRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(e.target)) {
+        setShowToolbar(false);
+      }
+    };
+    
+    if (showToolbar) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showToolbar]);
 
   const addReaction = (emoji) => {
     setReactions((prev) =>
       prev.includes(emoji) ? prev.filter((e) => e !== emoji) : [...prev, emoji]
     );
+    setShowToolbar(false);
+  };
+
+  const handleMouseLeave = () => {
+    setHovered(false);
+    // Let the toolbar stay open until click outside
   };
 
   return (
     <div
       className={`flex gap-2 group ${isOut ? 'flex-row-reverse' : ''}`}
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Message bubble */}
       <div className={`relative max-w-[65%] flex flex-col ${isOut ? 'items-end' : 'items-start'}`}>
+        
+        {/* Hover action toolbar (absolute to overlap on top) */}
+        <div ref={toolbarRef} className={`absolute -top-11 ${isOut ? 'right-0' : 'left-0'} z-30`}>
+          <AnimatePresence>
+            {showToolbar && <MessageActions onReact={addReaction} />}
+          </AnimatePresence>
+        </div>
+
         <div
           className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
             isOut
@@ -89,27 +119,39 @@ const Message = ({ msg }) => {
         </div>
 
 
+        {/* The hover prompt/trigger (appears under the message on hover) */}
+        <AnimatePresence>
+          {hovered && !showToolbar && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className={`absolute -bottom-3.5 ${isOut ? 'left-2' : 'right-2'} z-20`}
+            >
+               <button
+                 onClick={(e) => { e.stopPropagation(); setShowToolbar(true); }}
+                 className="flex items-center justify-center bg-[var(--bg-panel)] border border-[var(--border-subtle)] shadow-sm rounded-full w-6 h-6 text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-glass-hover)] transition-all"
+               >
+                 <Smile size={12} />
+               </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Reactions display */}
         {reactions.length > 0 && (
-          <div className={`flex gap-1 mt-1 ${isOut ? 'justify-end' : 'justify-start'}`}>
+          <div className={`absolute -bottom-3.5 ${isOut ? 'right-2' : 'left-2'} flex gap-1 z-10`}>
             {reactions.map((emoji) => (
               <button
                 key={emoji}
                 onClick={() => addReaction(emoji)}
-                className="text-[13px] px-1.5 py-0.5 rounded-full bg-[var(--bg-glass)] border border-[var(--border)] hover:bg-[var(--bg-glass-hover)] transition-colors"
+                className="text-[12px] px-1.5 py-0.5 rounded-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] hover:bg-[var(--bg-glass-hover)] transition-colors shadow-sm leading-none flex items-center justify-center"
               >
                 {emoji}
               </button>
             ))}
           </div>
         )}
-      </div>
-
-      {/* Hover action toolbar */}
-      <div className={`flex items-center self-center ${isOut ? 'mr-2 order-first' : 'ml-2'}`}>
-        <AnimatePresence>
-          {hovered && <MessageActions onReact={addReaction} />}
-        </AnimatePresence>
       </div>
     </div>
   );

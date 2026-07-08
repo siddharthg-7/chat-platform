@@ -18,7 +18,7 @@ const Toggle = ({ on, onToggle }) => (
     className={`relative h-6 w-11 rounded-full transition-colors duration-300 focus:outline-none ${on ? 'bg-[var(--accent)] shadow-[0_0_10px_var(--accent-glow)]' : 'bg-[var(--bg-glass)] border border-[var(--border)]'}`}
   >
     <span
-      className={`absolute top-[3px] h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform duration-300 ${on ? 'translate-x-[22px]' : 'translate-x-[3px]'}`}
+      className={`absolute left-0 top-[3px] h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform duration-300 ${on ? 'translate-x-[23px]' : 'translate-x-[3px]'}`}
     />
   </button>
 );

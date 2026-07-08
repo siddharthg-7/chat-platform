@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Oswald:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -22,12 +22,12 @@
   /* Borders */
   --border:         #e2e2e2;
   --border-subtle:  #ebebeb;
-  --border-active:  #3b82f6;
+  --border-active:  #059669;
 
   /* Accent */
-  --accent:         #3b82f6;
-  --accent-hover:   #2563eb;
-  --accent-dim:     rgba(59, 130, 246, 0.1);
+  --accent:         #059669;
+  --accent-hover:   #047857;
+  --accent-dim:     rgba(5, 150, 105, 0.1);
   --accent-glow:    transparent;
 
   /* Text */
@@ -37,7 +37,7 @@
 
   /* Message bubbles */
   --msg-in:         #f0f0f0;
-  --msg-out:        #3b82f6;
+  --msg-out:        #059669;
 
   /* Status */
   --status-online:  #10b981;
@@ -61,12 +61,12 @@ html.dark {
   /* Borders */
   --border:         #2a2a2a;
   --border-subtle:  #1f1f1f;
-  --border-active:  #3b82f6;
+  --border-active:  #10b981;
 
   /* Accent */
-  --accent:         #3b82f6;
-  --accent-hover:   #60a5fa;
-  --accent-dim:     rgba(59, 130, 246, 0.15);
+  --accent:         #10b981;
+  --accent-hover:   #34d399;
+  --accent-dim:     rgba(16, 185, 129, 0.15);
   --accent-glow:    transparent;
 
   /* Text */
@@ -76,7 +76,7 @@ html.dark {
 
   /* Message bubbles */
   --msg-in:         #1e1e1e;
-  --msg-out:        #2563eb;
+  --msg-out:        #10b981;
 }
 
 
@@ -122,12 +122,20 @@ body {
     --input:      var(--bg-glass);
     --ring:       var(--accent);
   }
+
+  b, strong {
+    font-family: 'Oswald', sans-serif;
+  }
 }
 
 /* ============================================================
    FLAT SURFACE UTILITIES
    ============================================================ */
 @layer utilities {
+  .font-medium, .font-semibold, .font-bold, .font-extrabold {
+    font-family: 'Oswald', sans-serif !important;
+  }
+
   /* kept for backward compat — now renders as flat panel */
   .glass {
     background: var(--bg-panel);

@@ -53,7 +53,7 @@ const Profile = () => {
             <Button
               variant="secondary"
               size="sm"
-              className="absolute top-4 right-4 glass text-white border-white/20 hover:border-white/40 text-xs"
+              className="absolute top-4 right-4 glass border-white/20 hover:border-white/40 text-xs text-foreground"
             >
               <Camera className="h-3.5 w-3.5 mr-1.5" /> Change Cover
             </Button>
@@ -65,7 +65,7 @@ const Profile = () => {
               <Avatar
                 src="https://i.pravatar.cc/150?u=a042581f4e29026704d"
                 fallback="JD"
-                className="h-28 w-28 border-4 border-[var(--bg-surface)] shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+                className="h-28 w-28 border-4 border-[var(--bg-surface)] shadow-md"
               />
               <Button
                 size="icon"
@@ -74,9 +74,9 @@ const Profile = () => {
                 <Camera className="h-3.5 w-3.5" />
               </Button>
             </div>
-            <div className="mb-2">
-              <h1 className="text-xl font-bold text-[var(--text)]">{profile.firstName} {profile.lastName}</h1>
-              <p className="text-sm text-[var(--text-muted)]">{profile.title}</p>
+            <div className="mb-0">
+              <h1 className="text-xl font-bold text-foreground">{profile.firstName} {profile.lastName}</h1>
+              <p className="text-sm text-muted-foreground">{profile.title}</p>
             </div>
           </div>
         </motion.div>
@@ -92,7 +92,7 @@ const Profile = () => {
           >
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">About</CardTitle>
+                <CardTitle className="text-base text-foreground">About</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-[13px] text-[var(--text-muted)] leading-relaxed">
