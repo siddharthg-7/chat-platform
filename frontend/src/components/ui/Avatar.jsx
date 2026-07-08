@@ -1,37 +1,34 @@
-import React from 'react';
-import { cn } from '@/lib/utils';
-import { User } from 'lucide-react';
+import { cn, initials, stringToHue } from "../../lib/utils";
 
-const Avatar = React.forwardRef(({ className, src, alt, fallback, size = 'default', ...props }, ref) => {
-  const sizes = {
-    sm: 'h-8 w-8',
-    default: 'h-10 w-10',
-    lg: 'h-12 w-12',
-    xl: 'h-16 w-16',
-    xxl: 'h-24 w-24'
-  };
+const SIZES = {
+  sm: "w-7 h-7 text-[11px]",
+  md: "w-9 h-9 text-xs",
+  lg: "w-12 h-12 text-sm",
+};
+
+export default function Avatar({ name = "", src, size = "md", className }) {
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className={cn("rounded-full object-cover shrink-0", SIZES[size], className)}
+      />
+    );
+  }
+
+  const hue = stringToHue(name);
 
   return (
     <div
-      ref={ref}
-      className={cn("relative flex shrink-0 overflow-hidden rounded-full bg-secondary", sizes[size], className)}
-      {...props}
-    >
-      {src ? (
-        <img src={src} alt={alt} className="aspect-square h-full w-full object-cover" />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
-          {fallback ? (
-            <span className="text-sm font-medium uppercase">{fallback}</span>
-          ) : (
-            <User className="h-1/2 w-1/2" />
-          )}
-        </div>
+      className={cn(
+        "rounded-full flex items-center justify-center font-semibold text-white shrink-0",
+        SIZES[size],
+        className
       )}
+      style={{ backgroundColor: `hsl(${hue}, 55%, 40%)` }}
+    >
+      {initials(name)}
     </div>
   );
-});
-
-Avatar.displayName = "Avatar";
-
-export { Avatar };
+}
