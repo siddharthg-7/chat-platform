@@ -1,105 +1,233 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Bell, Lock, Eye, MonitorSmartphone, Volume2, Shield } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const NAV_SECTIONS = [
+  { label: 'Appearance', icon: MonitorSmartphone },
+  { label: 'Notifications', icon: Bell },
+  { label: 'Privacy & Security', icon: Lock },
+  { label: 'Audio & Video', icon: Volume2 },
+  { label: 'Advanced', icon: Shield },
+];
+
+const Toggle = ({ on, onToggle }) => (
+  <button
+    onClick={onToggle}
+    className={`relative h-6 w-11 rounded-full transition-colors duration-300 focus:outline-none ${on ? 'bg-[var(--accent)] shadow-[0_0_10px_var(--accent-glow)]' : 'bg-[var(--bg-glass)] border border-[var(--border)]'}`}
+  >
+    <span
+      className={`absolute top-[3px] h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform duration-300 ${on ? 'translate-x-[22px]' : 'translate-x-[3px]'}`}
+    />
+  </button>
+);
 
 const Settings = () => {
+  const [activeSection, setActiveSection] = useState(0);
+  const [compactMode, setCompactMode] = useState(false);
+  const [linkPreviews, setLinkPreviews] = useState(true);
+  const [desktopNotifs, setDesktopNotifs] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [activeAccent, setActiveAccent] = useState(0);
+  const [themeMode, setThemeMode] = useState(() => {
+    return localStorage.getItem('theme') || 'dark';
+  });
+
+  const applyTheme = (mode) => {
+    setThemeMode(mode);
+    localStorage.setItem('theme', mode);
+    if (mode === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else if (mode === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (systemDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  };
+
+
+  const ACCENTS = [
+    { color: '#6366f1', label: 'Indigo' },
+    { color: '#8b5cf6', label: 'Violet' },
+    { color: '#10b981', label: 'Emerald' },
+    { color: '#f43f5e', label: 'Rose' },
+    { color: '#3b82f6', label: 'Blue' },
+  ];
+
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-8 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage your account settings and preferences.</p>
-      </div>
+    <div className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-surface)]">
+      <div className="max-w-4xl mx-auto p-6 lg:p-8 space-y-7">
 
-      <div className="grid gap-6 md:grid-cols-[250px_1fr]">
-        
-        {/* Settings Navigation */}
-        <nav className="flex md:flex-col gap-2 overflow-x-auto pb-4 md:pb-0 custom-scrollbar">
-          <Button variant="secondary" className="justify-start gap-3 w-full shrink-0">
-            <MonitorSmartphone className="h-4 w-4" /> Appearance
-          </Button>
-          <Button variant="ghost" className="justify-start gap-3 w-full shrink-0 text-muted-foreground">
-            <Bell className="h-4 w-4" /> Notifications
-          </Button>
-          <Button variant="ghost" className="justify-start gap-3 w-full shrink-0 text-muted-foreground">
-            <Lock className="h-4 w-4" /> Privacy & Security
-          </Button>
-          <Button variant="ghost" className="justify-start gap-3 w-full shrink-0 text-muted-foreground">
-            <Volume2 className="h-4 w-4" /> Audio & Video
-          </Button>
-          <Button variant="ghost" className="justify-start gap-3 w-full shrink-0 text-muted-foreground">
-            <Shield className="h-4 w-4" /> Advanced
-          </Button>
-        </nav>
+        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}>
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--text)]">Settings</h1>
+          <p className="text-sm text-[var(--text-muted)] mt-1">Manage your account settings and preferences.</p>
+        </motion.div>
 
-        {/* Settings Content */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Theme Preferences</CardTitle>
-              <CardDescription>Customize the look and feel of your application.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-medium">Dark Mode First</h4>
-                  <p className="text-sm text-muted-foreground">The platform is optimized for dark mode.</p>
-                </div>
-                <div className="flex items-center gap-2 bg-secondary p-1 rounded-lg border border-border">
-                  <Button variant="ghost" size="sm" className="h-7 text-xs px-2 text-muted-foreground">Light</Button>
-                  <Button variant="default" size="sm" className="h-7 text-xs px-2 shadow-sm">Dark</Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs px-2 text-muted-foreground">System</Button>
-                </div>
-              </div>
+        <div className="grid gap-5 md:grid-cols-[220px_1fr]">
 
-              <div className="pt-4 border-t border-border flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-medium">Accent Color</h4>
-                  <p className="text-sm text-muted-foreground">Choose your primary color.</p>
-                </div>
-                <div className="flex gap-2">
-                  <button className="h-6 w-6 rounded-full bg-blue-600 ring-2 ring-blue-600 ring-offset-2 ring-offset-background"></button>
-                  <button className="h-6 w-6 rounded-full bg-purple-600"></button>
-                  <button className="h-6 w-6 rounded-full bg-emerald-500"></button>
-                  <button className="h-6 w-6 rounded-full bg-rose-500"></button>
-                </div>
-              </div>
+          {/* Settings Nav */}
+          <motion.nav
+            className="flex md:flex-col gap-1 overflow-x-auto pb-2 md:pb-0 custom-scrollbar"
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            {NAV_SECTIONS.map(({ label, icon: Icon }, i) => (
+              <button
+                key={label}
+                onClick={() => setActiveSection(i)}
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium w-full text-left transition-all duration-150 shrink-0 ${
+                  i === activeSection
+                    ? 'bg-[var(--bg-glass-active)] text-[var(--accent)] border border-[var(--border-active)]'
+                    : 'text-[var(--text-muted)] hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text)] border border-transparent'
+                }`}
+              >
+                <Icon size={15} className="shrink-0" />
+                {label}
+              </button>
+            ))}
+          </motion.nav>
 
-            </CardContent>
-          </Card>
+          {/* Settings Content */}
+          <motion.div
+            key={activeSection}
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.25 }}
+            className="space-y-5"
+          >
+            {activeSection === 0 && (
+              <>
+                {/* Theme card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Theme Preferences</CardTitle>
+                    <CardDescription>Customize the look and feel of your application.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-medium text-[var(--text)]">Color Mode</h4>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">The platform is optimized for dark mode.</p>
+                      </div>
+                      <div className="flex items-center gap-1 bg-[var(--bg-glass)] border border-[var(--border)] p-1 rounded-lg">
+                        {['Light', 'Dark', 'System'].map((mode) => {
+                          const currentVal = mode.toLowerCase();
+                          const active = themeMode === currentVal;
+                          return (
+                            <button
+                              key={mode}
+                              onClick={() => applyTheme(currentVal)}
+                              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 cursor-pointer ${
+                                active
+                                  ? 'bg-[var(--accent)] text-white shadow-[0_0_10px_var(--accent-glow)]'
+                                  : 'text-[var(--text-muted)] hover:text-[var(--text)]'
+                              }`}
+                            >
+                              {mode}
+                            </button>
+                          );
+                        })}
+                      </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Message Display</CardTitle>
-              <CardDescription>How messages are rendered in your chat window.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-medium">Compact Mode</h4>
-                  <p className="text-sm text-muted-foreground">Fit more messages on the screen.</p>
-                </div>
-                {/* Mock Toggle Switch */}
-                <div className="h-6 w-11 rounded-full bg-secondary border border-border relative cursor-pointer">
-                  <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-muted-foreground transition-all"></div>
-                </div>
-              </div>
+                    </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-medium">Show Link Previews</h4>
-                  <p className="text-sm text-muted-foreground">Automatically fetch and display embedded URLs.</p>
-                </div>
-                {/* Mock Toggle Switch On */}
-                <div className="h-6 w-11 rounded-full bg-primary relative cursor-pointer">
-                  <div className="absolute right-1 top-1 h-4 w-4 rounded-full bg-primary-foreground transition-all"></div>
-                </div>
-              </div>
+                    <div className="pt-4 border-t border-[var(--border)] flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-medium text-[var(--text)]">Accent Color</h4>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">Choose your primary brand color.</p>
+                      </div>
+                      <div className="flex gap-2">
+                        {ACCENTS.map(({ color, label }, i) => (
+                          <button
+                            key={color}
+                            onClick={() => setActiveAccent(i)}
+                            title={label}
+                            className={`h-6 w-6 rounded-full transition-all duration-200 ${
+                              i === activeAccent
+                                ? 'ring-2 ring-offset-2 ring-offset-[var(--bg-surface)] scale-110'
+                                : 'hover:scale-110 opacity-70 hover:opacity-100'
+                            }`}
+                            style={{
+                              backgroundColor: color,
+                              ...(i === activeAccent && { ringColor: color }),
+                              boxShadow: i === activeAccent ? `0 0 8px ${color}80, 0 0 0 2px ${color}, 0 0 0 4px var(--bg-surface), 0 0 0 5px ${color}` : undefined,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-            </CardContent>
-          </Card>
+                {/* Message display */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Message Display</CardTitle>
+                    <CardDescription>Control how messages are rendered in your chat window.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    {[
+                      { label: 'Compact Mode', desc: 'Fit more messages on the screen.', value: compactMode, toggle: () => setCompactMode(v => !v) },
+                      { label: 'Show Link Previews', desc: 'Automatically fetch and display embedded URLs.', value: linkPreviews, toggle: () => setLinkPreviews(v => !v) },
+                    ].map(({ label, desc, value, toggle }) => (
+                      <div key={label} className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-sm font-medium text-[var(--text)]">{label}</h4>
+                          <p className="text-xs text-[var(--text-muted)] mt-0.5">{desc}</p>
+                        </div>
+                        <Toggle on={value} onToggle={toggle} />
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+            {activeSection === 1 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Notification Settings</CardTitle>
+                  <CardDescription>Manage how and when you receive notifications.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  {[
+                    { label: 'Desktop Notifications', desc: 'Receive push notifications on your desktop.', value: desktopNotifs, toggle: () => setDesktopNotifs(v => !v) },
+                    { label: 'Sound Alerts', desc: 'Play a sound when new messages arrive.', value: soundEnabled, toggle: () => setSoundEnabled(v => !v) },
+                  ].map(({ label, desc, value, toggle }) => (
+                    <div key={label} className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-medium text-[var(--text)]">{label}</h4>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">{desc}</p>
+                      </div>
+                      <Toggle on={value} onToggle={toggle} />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {(activeSection === 2 || activeSection === 3 || activeSection === 4) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{NAV_SECTIONS[activeSection].label}</CardTitle>
+                  <CardDescription>Coming soon — this section is under construction.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col items-center justify-center py-12 text-center text-[var(--text-muted)]">
+                    {React.createElement(NAV_SECTIONS[activeSection].icon, { size: 36, className: 'mb-3 opacity-30' })}
+                    <p className="text-sm">This section will be available in a future update.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </motion.div>
         </div>
       </div>
     </div>
