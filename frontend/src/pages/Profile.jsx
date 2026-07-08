@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -7,6 +7,28 @@ import { Camera, MapPin, Link as LinkIcon, Mail, Briefcase, Calendar } from 'luc
 import { motion } from 'framer-motion';
 
 const Profile = () => {
+  const [profile, setProfile] = useState({
+    firstName: 'John',
+    lastName: 'Doe',
+    title: 'Senior Frontend Engineer',
+    email: 'john.doe@example.com',
+    bio: 'Passionate software engineer focused on building scalable frontend architectures and beautiful user experiences.',
+    location: 'San Francisco, CA',
+    company: 'ChatPlatform Inc.',
+    website: 'github.com/johndoe',
+  });
+
+  const [form, setForm] = useState({ ...profile });
+
+  const handleSave = (e) => {
+    e.preventDefault();
+    setProfile({ ...form });
+  };
+
+  const handleCancel = () => {
+    setForm({ ...profile });
+  };
+
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-surface)]">
       <div className="max-w-5xl mx-auto p-6 lg:p-8 space-y-8">
@@ -53,8 +75,8 @@ const Profile = () => {
               </Button>
             </div>
             <div className="mb-2">
-              <h1 className="text-xl font-bold text-white drop-shadow-lg">John Doe</h1>
-              <p className="text-sm text-white/80 drop-shadow">Senior Frontend Engineer</p>
+              <h1 className="text-xl font-bold text-[var(--text)]">{profile.firstName} {profile.lastName}</h1>
+              <p className="text-sm text-[var(--text-muted)]">{profile.title}</p>
             </div>
           </div>
         </motion.div>
@@ -74,14 +96,14 @@ const Profile = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-[13px] text-[var(--text-muted)] leading-relaxed">
-                  Passionate software engineer focused on building scalable frontend architectures and beautiful user experiences.
+                  {profile.bio}
                 </p>
                 <div className="space-y-2.5 pt-3 border-t border-[var(--border)]">
                   {[
-                    { icon: MapPin,     text: 'San Francisco, CA' },
-                    { icon: Briefcase,  text: 'ChatPlatform Inc.' },
-                    { icon: Mail,       text: 'john.doe@example.com' },
-                    { icon: LinkIcon,   text: 'github.com/johndoe', accent: true },
+                    { icon: MapPin,     text: profile.location },
+                    { icon: Briefcase,  text: profile.company },
+                    { icon: Mail,       text: profile.email },
+                    { icon: LinkIcon,   text: profile.website, accent: true },
                     { icon: Calendar,   text: 'Joined March 2026' },
                   ].map(({ icon: Icon, text, accent }) => (
                     <div
@@ -110,39 +132,40 @@ const Profile = () => {
                 <CardDescription>Update your personal information and public profile.</CardDescription>
               </CardHeader>
               <CardContent>
-                <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+                <form className="space-y-5" onSubmit={handleSave}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">First Name</label>
-                      <Input defaultValue="John" />
+                      <Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Last Name</label>
-                      <Input defaultValue="Doe" />
+                      <Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Title / Headline</label>
-                    <Input defaultValue="Senior Frontend Engineer" />
+                    <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Email</label>
-                    <Input type="email" defaultValue="john.doe@example.com" />
+                    <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Bio</label>
                     <textarea
                       className="flex min-h-[90px] w-full rounded-lg border border-[var(--border)] bg-[var(--bg-glass)] px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border-active)] focus:ring-1 focus:ring-[var(--accent)] focus:shadow-[0_0_10px_var(--accent-glow)] transition-all duration-200 custom-scrollbar resize-none"
-                      defaultValue="Passionate software engineer focused on building scalable frontend architectures and beautiful user experiences."
+                      value={form.bio}
+                      onChange={(e) => setForm({ ...form, bio: e.target.value })}
                     />
                   </div>
 
                   <div className="flex justify-end gap-3 pt-2 border-t border-[var(--border)]">
-                    <Button variant="outline">Cancel</Button>
-                    <Button>Save Changes</Button>
+                    <Button variant="outline" type="button" onClick={handleCancel}>Cancel</Button>
+                    <Button type="submit">Save Changes</Button>
                   </div>
                 </form>
               </CardContent>
