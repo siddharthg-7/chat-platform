@@ -2,36 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  /* Swapping WhatsApp green-tinted darks for a modern, sleek slate-900 */
-  background-color: #0f172a; 
-  color: #f8fafc;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
+html,
+body,
+#root {
+  height: 100%;
 }
 
-/* Premium, minimal custom scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+body {
+  background-color: #14171f;
+  color: #e7e9f0;
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
+
+/* thin custom scrollbars for the panes */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
   background: transparent;
 }
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.2); /* Subtle indigo accent */
-  border-radius: 9999px;
+::-webkit-scrollbar-thumb {
+  background-color: #2b303c;
+  border-radius: 8px;
 }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.4);
+::-webkit-scrollbar-thumb:hover {
+  background-color: #3a4051;
 }
 
-/* Replaced the WhatsApp doodle pattern with a subtle, modern tech grid */
-.wa-bg-pattern {
-  background-color: #0b0f19;
-  background-image: linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
-  background-size: 20px 20px;
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(62, 217, 160, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(62, 217, 160, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(62, 217, 160, 0);
+  }
+}
+.pulse-live {
+  animation: pulse-ring 2s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-live {
+    animation: none;
+  }
 }
