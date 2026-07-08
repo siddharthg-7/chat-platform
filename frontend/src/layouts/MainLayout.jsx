@@ -1,14 +1,13 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet } from "react-router-dom";
+import Navbar from "../components/Navbar";
 
-const MainLayout = () => {
+export default function MainLayout() {
   return (
-    <div className="flex h-screen w-full bg-background overflow-hidden selection:bg-primary selection:text-primary-foreground text-foreground">
-      <main className="flex-1 overflow-hidden bg-background flex">
+    <div className="h-screen flex flex-col bg-ink text-white font-sans">
+      <Navbar />
+      <main className="flex-1 min-h-0 flex overflow-hidden">
         <Outlet />
       </main>
     </div>
   );
-};
-
-export default MainLayout;
+}

@@ -1,12 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import Sidebar from "../components/Sidebar";
-import ConversationList from "../components/ConversationList";
-import ChatWindow from "../components/ChatWindow.jsx";
-import DetailsPanel from "../components/DetailsPanel";
-import { ChatSocket } from "../services/websocket";
+import MainLayout from "../layouts/MainLayout";
+import { ChatSocket } from "../services/socketService";
 import { mockConversations, mockMessagesByConversation } from "../lib/mockData";
 
-export default function Chat() {
+export default function InboxPage() {
   const [conversations] = useState(mockConversations);
   const [activeId, setActiveId] = useState(mockConversations[0]?.id ?? null);
   const [messagesByConv, setMessagesByConv] = useState(mockMessagesByConversation);
@@ -77,20 +74,14 @@ export default function Chat() {
   );
 
   return (
-    <div className="flex flex-1 min-h-0 w-full">
-      <Sidebar />
-      <ConversationList
-        conversations={conversations}
-        activeId={activeId}
-        onSelect={setActiveId}
-      />
-      <ChatWindow
-        conversation={activeConversation}
-        messages={messages}
-        socketStatus={socketStatus}
-        onSend={handleSend}
-      />
-      <DetailsPanel conversation={activeConversation} />
-    </div>
+    <MainLayout
+      conversations={conversations}
+      activeConversation={activeConversation}
+      activeId={activeId}
+      onSelectConversation={setActiveId}
+      messages={messages}
+      socketStatus={socketStatus}
+      onSend={handleSend}
+    />
   );
 }
