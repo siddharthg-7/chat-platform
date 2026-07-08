@@ -9,31 +9,17 @@ const Login = () => {
   const [showPass, setShowPass] = useState(false);
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[var(--bg-base)]">
-      
-      {/* Animated background orbs */}
-      <div className="animate-float absolute top-[-15%] left-[-10%] h-[600px] w-[600px] rounded-full bg-indigo-600/20 blur-[140px] pointer-events-none" />
-      <div className="animate-float-delay absolute bottom-[-15%] right-[-10%] h-[500px] w-[500px] rounded-full bg-purple-600/20 blur-[120px] pointer-events-none" />
-      <div className="absolute top-[40%] right-[15%] h-[300px] w-[300px] rounded-full bg-blue-500/10 blur-[100px] pointer-events-none" />
-
-      {/* Subtle grid overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-30"
-        style={{
-          backgroundImage: 'linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px)',
-          backgroundSize: '32px 32px',
-        }}
-      />
+    <div className="flex min-h-screen w-full items-center justify-center bg-[var(--bg-base)]">
 
       <motion.div
-        initial={{ opacity: 0, y: 24, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="glass z-10 w-full max-w-md rounded-2xl p-8 sm:p-10 shadow-[0_24px_80px_rgba(0,0,0,0.5)]"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        className="glass w-full max-w-md rounded-2xl p-8 sm:p-10 shadow-sm"
       >
         {/* Logo + Header */}
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-[0_0_28px_rgba(99,102,241,0.5)] animate-pulse-glow">
+          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent)]">
             <Zap className="h-7 w-7 text-white" fill="white" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-[var(--text)]">Welcome back</h1>
@@ -85,7 +71,7 @@ const Login = () => {
             <span className="w-full border-t border-[var(--border)]" />
           </div>
           <div className="relative flex justify-center text-[11px] uppercase tracking-widest">
-            <span className="px-3 text-[var(--text-muted)]" style={{ background: 'rgba(13,17,23,0.8)', backdropFilter: 'blur(4px)' }}>
+            <span className="px-3 bg-[var(--bg-panel)] text-[var(--text-muted)]">
               Or continue with
             </span>
           </div>

@@ -29,7 +29,6 @@ const Settings = () => {
   const [linkPreviews, setLinkPreviews] = useState(true);
   const [desktopNotifs, setDesktopNotifs] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [activeAccent, setActiveAccent] = useState(0);
   const [themeMode, setThemeMode] = useState(() => {
     return localStorage.getItem('theme') || 'dark';
   });
@@ -50,15 +49,6 @@ const Settings = () => {
       }
     }
   };
-
-
-  const ACCENTS = [
-    { color: '#6366f1', label: 'Indigo' },
-    { color: '#8b5cf6', label: 'Violet' },
-    { color: '#10b981', label: 'Emerald' },
-    { color: '#f43f5e', label: 'Rose' },
-    { color: '#3b82f6', label: 'Blue' },
-  ];
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-surface)]">
@@ -136,32 +126,6 @@ const Settings = () => {
                         })}
                       </div>
 
-                    </div>
-
-                    <div className="pt-4 border-t border-[var(--border)] flex items-center justify-between">
-                      <div>
-                        <h4 className="text-sm font-medium text-[var(--text)]">Accent Color</h4>
-                        <p className="text-xs text-[var(--text-muted)] mt-0.5">Choose your primary brand color.</p>
-                      </div>
-                      <div className="flex gap-2">
-                        {ACCENTS.map(({ color, label }, i) => (
-                          <button
-                            key={color}
-                            onClick={() => setActiveAccent(i)}
-                            title={label}
-                            className={`h-6 w-6 rounded-full transition-all duration-200 ${
-                              i === activeAccent
-                                ? 'ring-2 ring-offset-2 ring-offset-[var(--bg-surface)] scale-110'
-                                : 'hover:scale-110 opacity-70 hover:opacity-100'
-                            }`}
-                            style={{
-                              backgroundColor: color,
-                              ...(i === activeAccent && { ringColor: color }),
-                              boxShadow: i === activeAccent ? `0 0 8px ${color}80, 0 0 0 2px ${color}, 0 0 0 4px var(--bg-surface), 0 0 0 5px ${color}` : undefined,
-                            }}
-                          />
-                        ))}
-                      </div>
                     </div>
                   </CardContent>
                 </Card>

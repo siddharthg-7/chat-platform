@@ -13,24 +13,24 @@ const STATS = [
     value: '24,593',
     change: '+12.5%',
     icon: MessageSquare,
-    gradient: 'from-indigo-500 to-purple-600',
-    glow: 'rgba(99,102,241,0.3)',
+    gradient: '',
+    glow: '',
   },
   {
     title: 'Total Contacts',
     value: '1,205',
     change: '+4.1%',
     icon: Users,
-    gradient: 'from-blue-500 to-cyan-500',
-    glow: 'rgba(59,130,246,0.3)',
+    gradient: '',
+    glow: '',
   },
   {
     title: 'Platform Uptime',
     value: '99.99%',
     change: '+0.0%',
     icon: Activity,
-    gradient: 'from-emerald-500 to-teal-500',
-    glow: 'rgba(16,185,129,0.3)',
+    gradient: '',
+    glow: '',
   },
 ];
 
@@ -98,22 +98,19 @@ const Dashboard = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             >
-              <Card className="hover:border-[var(--border-active)] group transition-all duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+              <Card className="hover:border-[var(--border-active)] transition-all duration-200">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">{stat.title}</p>
                       <p className="text-3xl font-bold text-[var(--text)] tracking-tight">{stat.value}</p>
                       <div className="flex items-center gap-1 mt-2">
-                        <TrendingUp className="h-3 w-3 text-emerald-400" />
-                        <span className="text-xs font-semibold text-emerald-400">{stat.change}</span>
+                        <TrendingUp className="h-3 w-3 text-emerald-500" />
+                        <span className="text-xs font-semibold text-emerald-500">{stat.change}</span>
                         <span className="text-xs text-[var(--text-muted)]">from last month</span>
                       </div>
                     </div>
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${stat.gradient} shrink-0`}
-                      style={{ boxShadow: `0 0 16px ${stat.glow}` }}
-                    >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)] shrink-0">
                       <stat.icon className="h-5 w-5 text-white" />
                     </div>
                   </div>

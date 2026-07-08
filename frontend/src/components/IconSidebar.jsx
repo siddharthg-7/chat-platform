@@ -53,7 +53,7 @@ const IconSidebar = () => {
       "
     >
       {/* Logo */}
-      <div className="mb-4 flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-glow animate-pulse-glow cursor-pointer">
+      <div className="mb-4 flex items-center justify-center w-10 h-10 rounded-xl bg-[var(--accent)] cursor-pointer">
         <Zap className="h-5 w-5 text-white" fill="white" />
       </div>
 
