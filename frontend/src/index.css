@@ -1,37 +1,233 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  /* Swapping WhatsApp green-tinted darks for a modern, sleek slate-900 */
-  background-color: #0f172a; 
-  color: #f8fafc;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  /* ============================================================
+     LIGHT THEME (Almost Plain Light Blue)
+     ============================================================ */
+  /* Backgrounds */
+  --bg-base:       #eef5fc; /* Very plain, soft light blue */
+  --bg-surface:    #f5f8ff; /* Extremely light blue-white */
+  --bg-panel:      #ffffff; /* Clean white panels */
+  --bg-glass:      rgba(255, 255, 255, 0.75); /* Plain light white/blue glass */
+  --bg-glass-hover:rgba(59, 130, 246, 0.05);
+  --bg-glass-active:rgba(59, 130, 246, 0.1);
+
+  /* Borders */
+  --border:        #dbeafe; /* Soft blue border */
+  --border-subtle: #eff6ff; /* Very faint blue border */
+  --border-active: #3b82f6; /* Clean corporate blue */
+
+  /* Accent */
+  --accent:        #3b82f6;
+  --accent-hover:  #2563eb;
+  --accent-dim:    rgba(59, 130, 246, 0.1);
+  --accent-glow:   rgba(59, 130, 246, 0.15);
+
+  /* Text */
+  --text:          #0f172a; /* Dark slate text */
+  --text-muted:    #475569; /* Slate-600 */
+  --text-subtle:   #94a3b8;
+
+  /* Message bubbles */
+  --msg-in:        #e2e8f0; /* Soft grey-blue */
+  --msg-out:       #3b82f6; /* Accent blue */
+
+  /* Status */
+  --status-online: #10b981;
+
+  /* Sidebar */
+  --sidebar-w:     64px;
+}
+
+html.dark {
+  /* ============================================================
+     DARK THEME (Dark Blue)
+     ============================================================ */
+  /* Backgrounds */
+  --bg-base:       #0b0f19; /* Deep dark blue */
+  --bg-surface:    #0f172a; /* Dark slate blue */
+  --bg-panel:      #1e293b; /* Mid slate blue */
+  --bg-glass:      rgba(30, 41, 59, 0.45); /* Slate-800 semi-transparent */
+  --bg-glass-hover:rgba(255, 255, 255, 0.05);
+  --bg-glass-active:rgba(59, 130, 246, 0.15);
+
+  /* Borders */
+  --border:        rgba(255, 255, 255, 0.07);
+  --border-subtle: rgba(255, 255, 255, 0.03);
+  --border-active: rgba(59, 130, 246, 0.5);
+
+  /* Accent */
+  --accent:        #3b82f6;
+  --accent-hover:  #60a5fa;
+  --accent-dim:    rgba(59, 130, 246, 0.2);
+  --accent-glow:   rgba(59, 130, 246, 0.3);
+
+  /* Text */
+  --text:          #f8fafc; /* Crisp white/slate text */
+  --text-muted:    #94a3b8; /* Muted slate text */
+  --text-subtle:   #475569;
+
+  /* Message bubbles */
+  --msg-in:        rgba(255, 255, 255, 0.07);
+  --msg-out:       #2563eb;
+}
+
+
+/* ============================================================
+   BASE RESET
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  background-color: var(--bg-surface);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
 }
 
-/* Premium, minimal custom scrollbar */
+/* ============================================================
+   TAILWIND LAYER OVERRIDES
+   ============================================================ */
+@layer base {
+  /* Map Tailwind semantic vars to our token system */
+  :root {
+    --background: var(--bg-surface);
+    --foreground: var(--text);
+    --card:       var(--bg-glass);
+    --border-color: var(--border);
+    --primary:    var(--accent);
+    --primary-foreground: #fff;
+    --muted-foreground: var(--text-muted);
+    --secondary:  var(--bg-glass);
+    --secondary-foreground: var(--text);
+    --input:      var(--bg-glass);
+    --ring:       var(--accent);
+  }
+}
+
+/* ============================================================
+   GLASSMORPHISM UTILITIES
+   ============================================================ */
+@layer utilities {
+  .glass {
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--border);
+  }
+
+  .glass-panel {
+    background: rgba(13, 17, 23, 0.80);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border);
+  }
+
+  .glass-dark {
+    background: rgba(8, 11, 20, 0.90);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 20px var(--accent-glow), 0 0 60px rgba(99, 102, 241, 0.10);
+  }
+
+  .glow-sm {
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #818cf8 0%, #6366f1 50%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.2); /* Subtle indigo accent */
+  background: rgba(99, 102, 241, 0.25);
   border-radius: 9999px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.45);
 }
 
-/* Replaced the WhatsApp doodle pattern with a subtle, modern tech grid */
-.wa-bg-pattern {
-  background-color: #0b0f19;
-  background-image: linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
-  background-size: 20px 20px;
+/* ============================================================
+   CHAT BACKGROUND PATTERN
+   ============================================================ */
+.chat-bg-pattern {
+  background-color: var(--bg-base);
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.025) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes float-orb {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(30px, -20px) scale(1.05); }
+  66%       { transform: translate(-20px, 10px) scale(0.97); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 12px var(--accent-glow); }
+  50%       { box-shadow: 0 0 24px var(--accent-glow), 0 0 48px rgba(99,102,241,0.15); }
+}
+
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.animate-float { animation: float-orb 8s ease-in-out infinite; }
+.animate-float-delay { animation: float-orb 10s ease-in-out infinite 2s; }
+.animate-pulse-glow { animation: pulse-glow 2.5s ease-in-out infinite; }
+.animate-slide-in { animation: slide-in-up 0.4s ease both; }
+
+/* ============================================================
+   SELECTION
+   ============================================================ */
+::selection {
+  background: var(--accent-dim);
+  color: var(--text);
 }

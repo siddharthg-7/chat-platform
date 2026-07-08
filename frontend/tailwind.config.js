@@ -6,20 +6,53 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        inter: ['Inter', 'sans-serif'],
+      },
       colors: {
-        // Your new unique brand layout palette!
-        brand: {
-          bg: '#0f172a',        // Deep slate background
-          panel: '#1e293b',     // Smooth panel background
-          accent: '#6366f1',    // Vibrant Indigo for active tabs/buttons
-          accentHover: '#4f46e5',
-          text: '#f8fafc',      // Crisp white text
-          muted: '#94a3b8',     // Muted gray for timestamps
-          bubbleIn: '#334155',  // Received message bubble
-          bubbleOut: '#4f46e5', // Sent message bubble
-        }
-      } 
-    }
+        background:  'var(--bg-surface)',
+        foreground:  'var(--text)',
+        border:      'var(--border)',
+        input:       'var(--bg-glass)',
+        ring:        'var(--accent)',
+        card:        'var(--bg-glass)',
+
+        primary: {
+          DEFAULT:    'var(--accent)',
+          hover:      'var(--accent-hover)',
+          foreground: '#ffffff',
+        },
+        secondary: {
+          DEFAULT:    'var(--bg-glass)',
+          foreground: 'var(--text)',
+        },
+        muted: {
+          DEFAULT:    'var(--bg-glass)',
+          foreground: 'var(--text-muted)',
+        },
+        accent: {
+          DEFAULT:    'var(--accent)',
+          dim:        'var(--accent-dim)',
+          glow:       'var(--accent-glow)',
+        },
+        panel:    'var(--bg-panel)',
+        surface:  'var(--bg-surface)',
+        base:     'var(--bg-base)',
+      },
+      borderColor: {
+        DEFAULT: 'var(--border)',
+      },
+      boxShadow: {
+        glass: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
+        glow:  '0 0 20px var(--accent-glow), 0 0 60px rgba(99,102,241,0.10)',
+        'glow-sm': '0 0 12px var(--accent-glow)',
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'gradient-conic':  'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+      },
+    },
   },
   plugins: [],
 }
