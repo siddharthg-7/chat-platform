@@ -1,25 +1,28 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
-        // Your new unique brand layout palette!
-        brand: {
-          bg: '#0f172a',        // Deep slate background
-          panel: '#1e293b',     // Smooth panel background
-          accent: '#6366f1',    // Vibrant Indigo for active tabs/buttons
-          accentHover: '#4f46e5',
-          text: '#f8fafc',      // Crisp white text
-          muted: '#94a3b8',     // Muted gray for timestamps
-          bubbleIn: '#334155',  // Received message bubble
-          bubbleOut: '#4f46e5', // Sent message bubble
-        }
-      } 
-    }
+        ink: "#14171F",
+        panel: "#1B1F29",
+        panel2: "#20242F",
+        border: "#2B303C",
+        accent: "#6E62F9",
+        accent2: "#8B7FFF",
+        mint: "#3ED9A0",
+        muted: "#8890A4",
+      },
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+      },
+      borderRadius: {
+        xl2: "1.1rem",
+      },
+      boxShadow: {
+        soft: "0 8px 30px rgba(0,0,0,0.25)",
+      },
+    },
   },
   plugins: [],
-}
+};
