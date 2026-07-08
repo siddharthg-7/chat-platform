@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
-import { MessageSquare, Users, Activity, ArrowUpRight, Plus, Search, TrendingUp, Wifi, Database, Server } from 'lucide-react';
+import { MessageSquare, Users, Activity, ArrowUpRight, Plus, Search, TrendingUp, Wifi, Database, Server, UserCircle } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { motion } from 'framer-motion';
 
@@ -17,7 +17,7 @@ const STATS = [
     glow: 'rgba(99,102,241,0.3)',
   },
   {
-    title: 'Active Users',
+    title: 'Total Contacts',
     value: '1,205',
     change: '+4.1%',
     icon: Users,
@@ -35,10 +35,19 @@ const STATS = [
 ];
 
 const RECENT_CHATS = [
-  { id: 1, name: 'Engineering Team', message: 'Deploy successful to production. 🚀', time: '2m ago', unread: 3, group: true },
-  { id: 2, name: 'Sarah Connor', message: 'Are we still on for the meeting?', time: '15m ago', unread: 0, group: false },
-  { id: 3, name: 'Design Sync', message: 'Figma files have been updated.', time: '1h ago', unread: 1, group: true },
-  { id: 4, name: 'John Doe', message: 'Thanks for the help earlier!', time: '2h ago', unread: 0, group: false },
+  { id: 1, name: 'Sarah Connor', message: 'Are we still on for the meeting?', time: '15m ago', unread: 2 },
+  { id: 2, name: 'John Doe', message: 'Thanks for the help earlier!', time: '2h ago', unread: 0 },
+  { id: 3, name: 'Emily Carter', message: 'Sent over the files you asked for.', time: '3h ago', unread: 1 },
+  { id: 4, name: 'Michael Lee', message: 'Sounds good, talk soon!', time: '5h ago', unread: 0 },
+];
+
+const ALL_CONTACTS = [
+  { id: 1, name: 'Sarah Connor', status: 'online' },
+  { id: 2, name: 'John Doe', status: 'offline' },
+  { id: 3, name: 'Emily Carter', status: 'online' },
+  { id: 4, name: 'Michael Lee', status: 'away' },
+  { id: 5, name: 'Priya Nair', status: 'online' },
+  { id: 6, name: 'Daniel Kim', status: 'offline' },
 ];
 
 const STATUS_ITEMS = [
@@ -46,6 +55,12 @@ const STATUS_ITEMS = [
   { label: 'Database Sync', status: 'Healthy', icon: Database, variant: 'success' },
   { label: 'Redis Cache', status: 'Optimal', icon: Server, variant: 'success' },
 ];
+
+const statusColor = {
+  online: 'bg-emerald-400',
+  away: 'bg-amber-400',
+  offline: 'bg-[var(--text-muted)]',
+};
 
 const Dashboard = () => {
   return (
@@ -121,8 +136,8 @@ const Dashboard = () => {
             <Card className="h-full">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle>Recent Activity</CardTitle>
-                  <CardDescription className="mt-0.5">You have 4 unread messages in 2 conversations.</CardDescription>
+                  <CardTitle>Recent Chats</CardTitle>
+                  <CardDescription className="mt-0.5">You have 3 unread messages.</CardDescription>
                 </div>
                 <Button variant="ghost" size="sm" className="text-xs gap-1">
                   View all <ArrowUpRight className="h-3 w-3" />
@@ -187,13 +202,101 @@ const Dashboard = () => {
                 <div className="pt-4 border-t border-[var(--border)]">
                   <h4 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">Quick Actions</h4>
                   <div className="grid grid-cols-2 gap-2">
-                    {['Invite Team', 'New Channel', 'Settings', 'Support'].map((action) => (
+                    {['Add Contact', 'New Chat', 'Settings', 'Support'].map((action) => (
                       <Button key={action} variant="outline" size="sm" className="w-full text-xs">
                         {action}
                       </Button>
                     ))}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+        </div>
+
+        {/* All Contacts + Profile */}
+        <div className="grid gap-4 lg:grid-cols-3">
+
+          {/* All Contacts — spans 2 cols */}
+          <motion.div
+            className="lg:col-span-2"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35, duration: 0.4 }}
+          >
+            <Card className="h-full">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>All Contacts</CardTitle>
+                  <CardDescription className="mt-0.5">Everyone you can chat with.</CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" className="text-xs gap-1">
+                  View all <ArrowUpRight className="h-3 w-3" />
+                </Button>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-0">
+                {ALL_CONTACTS.map((contact, i) => (
+                  <motion.div
+                    key={contact.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 + i * 0.05 }}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[var(--bg-glass-hover)] transition-all duration-150 group"
+                  >
+                    <div className="relative shrink-0">
+                      <Avatar
+                        fallback={contact.name.substring(0, 2).toUpperCase()}
+                        className="h-9 w-9 text-xs group-hover:ring-2 group-hover:ring-[var(--accent)] transition-all duration-200"
+                      />
+                      <span
+                        className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-[var(--bg-surface)] ${statusColor[contact.status]}`}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-[var(--text)] truncate block">{contact.name}</span>
+                      <span className="text-[11px] text-[var(--text-muted)] capitalize">{contact.status}</span>
+                    </div>
+                  </motion.div>
+                ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Profile */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.4 }}
+          >
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle>Profile</CardTitle>
+                <CardDescription>Your account details</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5 pt-0">
+                <div className="flex items-center gap-3">
+                  <Avatar fallback="YO" className="h-14 w-14 text-lg" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[var(--text)] truncate">You</p>
+                    <p className="text-xs text-[var(--text-muted)] truncate">you@example.com</p>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-[var(--border)] space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[var(--text-muted)]">Status</span>
+                    <Badge variant="success">Online</Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[var(--text-muted)]">Contacts</span>
+                    <span className="text-[var(--text)] font-medium">1,205</span>
+                  </div>
+                </div>
+
+                <Button variant="outline" size="sm" className="w-full text-xs gap-2">
+                  <UserCircle className="h-3.5 w-3.5" /> Edit Profile
+                </Button>
               </CardContent>
             </Card>
           </motion.div>

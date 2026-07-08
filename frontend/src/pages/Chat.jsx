@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, MoreVertical, Paperclip, Send, Smile, Phone, Video, Users, CheckCheck, Reply, MoreHorizontal } from 'lucide-react';
+import { Search, MoreVertical, Paperclip, Send, Smile, Users, CheckCheck, Reply, MoreHorizontal } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -205,12 +205,14 @@ const Chat = () => {
               <p className="text-[11px] text-[var(--text-muted)]">John, Sarah, Design Sync, You</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 text-[var(--text-muted)]">
-            <button className="hover:text-[var(--text)] transition-colors"><Video size={18} /></button>
-            <button className="hover:text-[var(--text)] transition-colors"><Phone size={18} /></button>
-            <button className="hover:text-[var(--text)] transition-colors"><Search size={18} /></button>
-            <button className="hover:text-[var(--text)] transition-colors"><MoreVertical size={18} /></button>
-          </div>
+            <div className="flex items-center gap-4 text-[var(--text-muted)]">
+               <button className="hover:text-[var(--text)] transition-colors">
+                 <Search size={18} />
+               </button>
+               <button className="hover:text-[var(--text)] transition-colors">
+                  <MoreVertical size={18} />
+               </button>
+            </div>
         </div>
 
         {/* Messages Area */}
