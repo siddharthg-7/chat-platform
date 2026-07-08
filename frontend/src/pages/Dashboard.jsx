@@ -89,38 +89,7 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          {STATS.map((stat, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <Card className="hover:border-[var(--border-active)] transition-all duration-200">
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">{stat.title}</p>
-                      <p className="text-3xl font-bold text-[var(--text)] tracking-tight">{stat.value}</p>
-                      <div className="flex items-center gap-1 mt-2">
-                        <TrendingUp className="h-3 w-3 text-emerald-500" />
-                        <span className="text-xs font-semibold text-emerald-500">{stat.change}</span>
-                        <span className="text-xs text-[var(--text-muted)]">from last month</span>
-                      </div>
-                    </div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)] shrink-0">
-                      <stat.icon className="h-5 w-5 text-white" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Lower Grid */}
+        {/* Upper Grid: Recent Chats + Profile */}
         <div className="grid gap-4 lg:grid-cols-3">
 
           {/* Recent Chats — spans 2 cols */}
@@ -131,14 +100,16 @@ const Dashboard = () => {
             transition={{ delay: 0.25, duration: 0.4 }}
           >
             <Card className="h-full">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Recent Chats</CardTitle>
-                  <CardDescription className="mt-0.5">You have 3 unread messages.</CardDescription>
+              <CardHeader>
+                <div className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Recent Chats</CardTitle>
+                    <CardDescription className="mt-0.5">You have 3 unread messages.</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" className="text-xs gap-1">
+                    View all <ArrowUpRight className="h-3 w-3" />
+                  </Button>
                 </div>
-                <Button variant="ghost" size="sm" className="text-xs gap-1">
-                  View all <ArrowUpRight className="h-3 w-3" />
-                </Button>
               </CardHeader>
               <CardContent className="space-y-1 pt-0">
                 {RECENT_CHATS.map((chat, i) => (
@@ -171,11 +142,101 @@ const Dashboard = () => {
             </Card>
           </motion.div>
 
-          {/* System Status + Quick Actions */}
+          {/* Profile (Swapped with System Status) */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.4 }}
+          >
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle>Profile</CardTitle>
+                <CardDescription>Your account details</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5 pt-0">
+                <div className="flex items-center gap-3">
+                  <Avatar fallback="YO" className="h-14 w-14 text-lg" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[var(--text)] truncate">You</p>
+                    <p className="text-xs text-[var(--text-muted)] truncate">you@example.com</p>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-[var(--border)] space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[var(--text-muted)]">Status</span>
+                    <Badge variant="success">Online</Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[var(--text-muted)]">Contacts</span>
+                    <span className="text-[var(--text)] font-medium">1,205</span>
+                  </div>
+                </div>
+
+                <Button variant="outline" size="sm" className="w-full text-xs gap-2">
+                  <UserCircle className="h-3.5 w-3.5" /> Edit Profile
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+        </div>
+
+        {/* Lower Grid: All Contacts + System Status */}
+        <div className="grid gap-4 lg:grid-cols-3">
+
+          {/* All Contacts — spans 2 cols */}
+          <motion.div
+            className="lg:col-span-2"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35, duration: 0.4 }}
+          >
+            <Card className="h-full">
+              <CardHeader>
+                <div className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>All Contacts</CardTitle>
+                    <CardDescription className="mt-0.5">Everyone you can chat with.</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" className="text-xs gap-1">
+                    View all <ArrowUpRight className="h-3 w-3" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-0">
+                {ALL_CONTACTS.map((contact, i) => (
+                  <motion.div
+                    key={contact.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 + i * 0.05 }}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[var(--bg-glass-hover)] transition-all duration-150 group"
+                  >
+                    <div className="relative shrink-0">
+                      <Avatar
+                        fallback={contact.name.substring(0, 2).toUpperCase()}
+                        className="h-9 w-9 text-xs group-hover:ring-2 group-hover:ring-[var(--accent)] transition-all duration-200"
+                      />
+                      <span
+                        className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-[var(--bg-surface)] ${statusColor[contact.status]}`}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-[var(--text)] truncate block">{contact.name}</span>
+                      <span className="text-[11px] text-[var(--text-muted)] capitalize">{contact.status}</span>
+                    </div>
+                  </motion.div>
+                ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* System Status + Quick Actions (Swapped with Profile) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.4 }}
           >
             <Card className="h-full">
               <CardHeader>
@@ -212,93 +273,37 @@ const Dashboard = () => {
 
         </div>
 
-        {/* All Contacts + Profile */}
-        <div className="grid gap-4 lg:grid-cols-3">
-
-          {/* All Contacts — spans 2 cols */}
-          <motion.div
-            className="lg:col-span-2"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.4 }}
-          >
-            <Card className="h-full">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>All Contacts</CardTitle>
-                  <CardDescription className="mt-0.5">Everyone you can chat with.</CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" className="text-xs gap-1">
-                  View all <ArrowUpRight className="h-3 w-3" />
-                </Button>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-0">
-                {ALL_CONTACTS.map((contact, i) => (
-                  <motion.div
-                    key={contact.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 + i * 0.05 }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[var(--bg-glass-hover)] transition-all duration-150 group"
-                  >
-                    <div className="relative shrink-0">
-                      <Avatar
-                        fallback={contact.name.substring(0, 2).toUpperCase()}
-                        className="h-9 w-9 text-xs group-hover:ring-2 group-hover:ring-[var(--accent)] transition-all duration-200"
-                      />
-                      <span
-                        className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-[var(--bg-surface)] ${statusColor[contact.status]}`}
-                      />
+        {/* Stats Grid (Moved to bottom) */}
+        <div className="grid gap-4 sm:grid-cols-3 pb-8">
+          {STATS.map((stat, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45 + i * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Card className="hover:border-[var(--border-active)] transition-all duration-200">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">{stat.title}</p>
+                      <p className="text-3xl font-bold text-[var(--text)] tracking-tight">{stat.value}</p>
+                      <div className="flex items-center gap-1 mt-2">
+                        <TrendingUp className="h-3 w-3 text-emerald-500" />
+                        <span className="text-xs font-semibold text-emerald-500">{stat.change}</span>
+                        <span className="text-xs text-[var(--text-muted)]">from last month</span>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-[var(--text)] truncate block">{contact.name}</span>
-                      <span className="text-[11px] text-[var(--text-muted)] capitalize">{contact.status}</span>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)] shrink-0">
+                      <stat.icon className="h-5 w-5 text-white" />
                     </div>
-                  </motion.div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Profile */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.4 }}
-          >
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle>Profile</CardTitle>
-                <CardDescription>Your account details</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5 pt-0">
-                <div className="flex items-center gap-3">
-                  <Avatar fallback="YO" className="h-14 w-14 text-lg" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[var(--text)] truncate">You</p>
-                    <p className="text-xs text-[var(--text-muted)] truncate">you@example.com</p>
                   </div>
-                </div>
-
-                <div className="pt-4 border-t border-[var(--border)] space-y-2.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-[var(--text-muted)]">Status</span>
-                    <Badge variant="success">Online</Badge>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-[var(--text-muted)]">Contacts</span>
-                    <span className="text-[var(--text)] font-medium">1,205</span>
-                  </div>
-                </div>
-
-                <Button variant="outline" size="sm" className="w-full text-xs gap-2">
-                  <UserCircle className="h-3.5 w-3.5" /> Edit Profile
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
         </div>
+
       </div>
     </div>
   );
