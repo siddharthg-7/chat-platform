@@ -1,0 +1,87 @@
+import { useEffect, useState, useCallback, useRef } from "react";
+import MainLayout from "../layouts/MainLayout";
+import { ChatSocket } from "../services/socketService";
+import { mockConversations, mockMessagesByConversation } from "../lib/mockData";
+
+export default function InboxPage() {
+  const [conversations] = useState(mockConversations);
+  const [activeId, setActiveId] = useState(mockConversations[0]?.id ?? null);
+  const [messagesByConv, setMessagesByConv] = useState(mockMessagesByConversation);
+  const [socketStatus, setSocketStatus] = useState("connecting");
+  const socketRef = useRef(null);
+
+  const activeConversation = conversations.find((c) => c.id === activeId) || null;
+  const messages = messagesByConv[activeId] || [];
+
+  // Open a Django Channels connection scoped to the active conversation's room.
+  useEffect(() => {
+    if (!activeConversation) return;
+
+    socketRef.current?.close();
+
+    const socket = new ChatSocket(activeConversation.roomName, {
+      onStatusChange: setSocketStatus,
+      onMessage: (data) => {
+        if (data.type !== "chat.message") return;
+        setMessagesByConv((prev) => {
+          const existing = prev[activeConversation.id] || [];
+          return {
+            ...prev,
+            [activeConversation.id]: [
+              ...existing,
+              {
+                id: `${Date.now()}`,
+                from: data.sender === "agent" ? "agent" : "contact",
+                author: data.sender,
+                text: data.message,
+                createdAt: data.timestamp || new Date().toISOString(),
+              },
+            ],
+          };
+        });
+      },
+    });
+
+    socketRef.current = socket;
+    socket.connect();
+
+    return () => socket.close();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeConversation?.id]);
+
+  const handleSend = useCallback(
+    (text) => {
+      if (!activeConversation) return;
+
+      const optimisticMessage = {
+        id: `local-${Date.now()}`,
+        from: "agent",
+        author: "You",
+        text,
+        createdAt: new Date().toISOString(),
+      };
+
+      setMessagesByConv((prev) => ({
+        ...prev,
+        [activeConversation.id]: [...(prev[activeConversation.id] || []), optimisticMessage],
+      }));
+
+      // Broadcast over the websocket so the Django Channels group (and any
+      // other connected agents) receive it in real time.
+      socketRef.current?.send(text, "agent");
+    },
+    [activeConversation]
+  );
+
+  return (
+    <MainLayout
+      conversations={conversations}
+      activeConversation={activeConversation}
+      activeId={activeId}
+      onSelectConversation={setActiveId}
+      messages={messages}
+      socketStatus={socketStatus}
+      onSend={handleSend}
+    />
+  );
+}
