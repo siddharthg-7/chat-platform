@@ -10,16 +10,56 @@ class SignupView(generics.CreateAPIView):
     serializer_class = SignupSerializer
 
 class LogoutView(APIView):
+    # Only authenticated users are allowed to log out.
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        # Get the refresh token sent by the frontend in the request body.
+        refresh_token = request.data.get("refresh")
+
+        # If the refresh token is missing, return a clear error message.
+        if not refresh_token:
+            return Response(
+                {
+                "error": "Refresh token is required",
+                "code": "missing_token",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         try:
-            refresh_token = request.data["refresh"]
+            # Create a RefreshToken object from the received token.
             token = RefreshToken(refresh_token)
+
+# The user logs in and receives:
+# Access Token (short-lived)
+# Refresh Token (long-lived)
+# During logout, the frontend sends the refresh token.
+# Django creates a RefreshToken object:
+# token = RefreshToken(refresh_token)
+# Calling: token.blacklist()
+# It stores that token in the blacklisted tokens table(provided by rest_framework_simplejwt.token_blacklist).
+# If someone later tries to use the same refresh token to obtain a new access token, Django rejects it because it has been blacklisted.
+# This is why the we included the token_blacklist migrations.
             token.blacklist()
-            return Response(status=status.HTTP_205_RESET_CONTENT)
-        except Exception as e:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            # Logout successful.
+            return Response(
+                {
+                "message": "Logout successful",
+                },
+                status=status.HTTP_205_RESET_CONTENT,
+            )
+
+        except Exception:
+            # The token is invalid, expired, malformed, or already blacklisted.
+            return Response(
+                {
+                "error": "Invalid or expired refresh token",
+                "code": "invalid_token",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 class ProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
