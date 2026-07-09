@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
+import PublicRoute from './components/PublicRoute';
 
 // Pages
 import Login from './pages/Login';
@@ -24,10 +25,12 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Route>
         </Route>
-        
-        {/* Auth routes without MainLayout */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+
+        {/* Auth routes — redirect to / if already logged in */}
+        <Route element={<PublicRoute />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
