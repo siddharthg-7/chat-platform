@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     # Third party
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'channels',
     'drf_spectacular',
@@ -30,7 +31,6 @@ INSTALLED_APPS = [
     # Local apps
     'apps.accounts',
     'apps.chat',
-    'apps.conversations',
     'apps.notifications',
     'apps.common',
 ]
@@ -129,3 +129,5 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'SIGNING_KEY': os.environ.get('JWT_SECRET', SECRET_KEY),
 }
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

@@ -1,12 +1,44 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Zap, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Zap, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { authService } from '../services/auth.service';
+import { setAuthStart, setAuthSuccess, setAuthFailure } from '../store/slices/authSlice';
 
 const Signup = () => {
   const [showPass, setShowPass] = useState(false);
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    first_name: '',
+    last_name: '',
+    password: ''
+  });
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { loading, error } = useSelector((state) => state.auth);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    dispatch(setAuthStart());
+    try {
+      await authService.signup(formData);
+      // Automatically login after signup
+      const loginData = await authService.login({ username: formData.username, password: formData.password });
+      dispatch(setAuthSuccess({ user: { username: formData.username } }));
+      navigate('/');
+    } catch (err) {
+      dispatch(setAuthFailure(err.response?.data ? JSON.stringify(err.response.data) : 'Signup failed'));
+    }
+  };
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-[var(--bg-base)]">
@@ -27,21 +59,32 @@ const Signup = () => {
         </div>
 
         {/* Form */}
-        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+        <form className="space-y-4" onSubmit={handleSignup}>
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-md">
+              {error}
+            </div>
+          )}
+          
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Username</label>
+            <Input type="text" name="username" value={formData.username} onChange={handleChange} placeholder="johndoe" className="h-11" required />
+          </div>
+          
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">First Name</label>
-              <Input type="text" placeholder="John" className="h-11" />
+              <Input type="text" name="first_name" value={formData.first_name} onChange={handleChange} placeholder="John" className="h-11" required />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Last Name</label>
-              <Input type="text" placeholder="Doe" className="h-11" />
+              <Input type="text" name="last_name" value={formData.last_name} onChange={handleChange} placeholder="Doe" className="h-11" required />
             </div>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Email</label>
-            <Input type="email" placeholder="name@example.com" className="h-11" />
+            <Input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="name@example.com" className="h-11" required />
           </div>
 
           <div className="space-y-1.5">
@@ -49,8 +92,12 @@ const Signup = () => {
             <div className="relative">
               <Input
                 type={showPass ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
                 placeholder="Min. 8 characters"
                 className="h-11 pr-10"
+                required
               />
               <button
                 type="button"
@@ -64,11 +111,11 @@ const Signup = () => {
           </div>
 
           <Button
-            type="button"
+            type="submit"
             className="w-full h-11 text-[15px] mt-1 gap-2"
-            onClick={() => window.location.href = '/'}
+            disabled={loading}
           >
-            Create Account <ArrowRight className="h-4 w-4" />
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Account'} <ArrowRight className="h-4 w-4" />
           </Button>
         </form>
 

@@ -1,23 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Search, MoreVertical, Paperclip, Send, Smile, Users, CheckCheck, Reply, MoreHorizontal } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const CONTACTS = [
-  { id: 1, name: 'Engineering Team', lastMsg: 'Deploy successful to production.', time: '10:42 AM', unread: 3, online: true },
-  { id: 2, name: 'Sarah Connor',     lastMsg: 'Are we still on for the meeting?', time: '09:15 AM', unread: 0, online: true },
-  { id: 3, name: 'Design Sync',      lastMsg: 'Figma files have been updated.',  time: 'Yesterday', unread: 1, online: false },
-  { id: 4, name: 'John Doe',         lastMsg: 'Thanks for the help earlier!',    time: 'Yesterday', unread: 0, online: false },
-  { id: 5, name: 'Product Managers', lastMsg: 'Q3 roadmap is finalized.',        time: 'Monday',    unread: 0, online: false },
-];
-
-const MESSAGES = [
-  { id: 1, type: 'in',  sender: 'John Doe',     senderColor: '#818cf8', text: 'Hey team! The new authentication microservice is deployed and stable. 🚀', time: '10:42 AM', reactions: ['👍', '🚀'] },
-  { id: 2, type: 'out', sender: 'You',           senderColor: null,      text: "Awesome work! I'll start integrating the frontend JWT logic today.", time: '10:45 AM', reactions: [] },
-  { id: 3, type: 'in',  sender: 'Sarah Connor',  senderColor: '#f472b6', text: "Don't forget to update the Swagger docs.", time: '10:50 AM', reactions: [] },
-  { id: 4, type: 'out', sender: 'You',           senderColor: null,      text: 'Already on it! Will push the changes by EOD.', time: '10:52 AM', reactions: ['❤️'] },
-  { id: 5, type: 'in',  sender: 'John Doe',     senderColor: '#818cf8', text: 'Perfect. Also, can someone review the PR for the new rate-limiter middleware?', time: '11:00 AM', reactions: [] },
-];
+import { chatService } from '../services/chat.service';
+import wsService from '../services/websocket';
+import { setConversations, setMessages, setActiveConversation } from '../store/slices/chatSlice';
 
 const EMOJI_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🚀'];
 
@@ -49,11 +37,15 @@ const MessageActions = ({ onReact }) => (
   </motion.div>
 );
 
-const Message = ({ msg }) => {
+const Message = ({ msg, currentUsername }) => {
   const [hovered, setHovered] = useState(false);
   const [showToolbar, setShowToolbar] = useState(false);
-  const [reactions, setReactions] = useState(msg.reactions);
-  const isOut = msg.type === 'out';
+  const [reactions, setReactions] = useState([]);
+  
+  // msg.sender might be an ID or an object. Let's assume the API returns sender details.
+  const senderName = msg.sender?.username || 'Unknown';
+  const isOut = senderName === currentUsername;
+  
   const toolbarRef = useRef(null);
 
   useEffect(() => {
@@ -107,14 +99,16 @@ const Message = ({ msg }) => {
           }`}
         >
           {!isOut && (
-            <span className="text-[12px] font-semibold block mb-0.5" style={{ color: msg.senderColor }}>
-              {msg.sender}
+            <span className="text-[12px] font-semibold block mb-0.5" style={{ color: '#818cf8' }}>
+              {senderName}
             </span>
           )}
           <span>{msg.text}</span>
           <div className="flex items-center gap-1 mt-1 justify-end">
-            <span className={`text-[10px] ${isOut ? 'text-white/70' : 'text-[var(--text-muted)]'}`}>{msg.time}</span>
-            {isOut && <CheckCheck className="h-3.5 w-3.5 text-white/80" />}
+            <span className={`text-[10px] ${isOut ? 'text-white/70' : 'text-[var(--text-muted)]'}`}>
+              {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+            {isOut && <CheckCheck className={`h-3.5 w-3.5 ${msg.is_read ? 'text-blue-400' : 'text-white/80'}`} />}
           </div>
         </div>
 
@@ -158,8 +152,45 @@ const Message = ({ msg }) => {
 };
 
 const Chat = () => {
-  const [activeContact, setActiveContact] = useState(0);
+  const dispatch = useDispatch();
+  const { conversations, messages, activeConversation, onlineUsers } = useSelector((state) => state.chat);
+  const { user } = useSelector((state) => state.auth);
   const [inputVal, setInputVal] = useState('');
+
+  // Fetch conversations on mount
+  useEffect(() => {
+    chatService.getConversations().then((data) => {
+      dispatch(setConversations(data));
+      if (data.length > 0 && !activeConversation) {
+        dispatch(setActiveConversation(data[0].id));
+      }
+    }).catch(console.error);
+  }, [dispatch]);
+
+  // Fetch messages and connect WS when activeConversation changes
+  useEffect(() => {
+    if (activeConversation) {
+      chatService.getMessages(activeConversation).then((data) => {
+        dispatch(setMessages(data));
+      }).catch(console.error);
+
+      wsService.connect(activeConversation);
+    }
+    
+    return () => {
+      wsService.disconnect();
+    };
+  }, [activeConversation, dispatch]);
+
+  const handleSend = async () => {
+    if (!inputVal.trim() || !activeConversation) return;
+    try {
+      await chatService.sendMessage(activeConversation, inputVal);
+      setInputVal('');
+    } catch (error) {
+      console.error('Failed to send message', error);
+    }
+  };
 
   return (
     <div className="flex flex-1 h-full overflow-hidden text-[var(--text)]">
@@ -190,43 +221,46 @@ const Chat = () => {
 
         {/* Contacts */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          {CONTACTS.map((contact, i) => (
+          {conversations.map((contact) => {
+            // Find the other participant's name
+            const otherParticipant = contact.participants?.find(p => p.username !== user?.username) || contact.participants?.[0];
+            const contactName = contact.is_group ? contact.name : (otherParticipant?.username || 'Unknown');
+            const isOnline = otherParticipant ? onlineUsers.includes(otherParticipant.id) : false;
+            
+            return (
             <div
               key={contact.id}
-              onClick={() => setActiveContact(i)}
+              onClick={() => dispatch(setActiveConversation(contact.id))}
               className={`flex items-center gap-3 px-3 py-3 cursor-pointer transition-all duration-150 border-b border-[var(--border-subtle)] ${
-                i === activeContact
+                contact.id === activeConversation
                   ? 'bg-[var(--bg-glass-active)] border-l-2 border-l-[var(--accent)]'
                   : 'hover:bg-[var(--bg-glass)] border-l-2 border-l-transparent'
               }`}
             >
               <div className="relative shrink-0">
                 <Avatar
-                  fallback={contact.name.substring(0, 2).toUpperCase()}
+                  fallback={contactName.substring(0, 2).toUpperCase()}
                   className="h-10 w-10 text-[11px]"
                 />
-                {contact.online && (
+                {isOnline && (
                   <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-[var(--bg-panel)]" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[13.5px] font-medium text-[var(--text)] truncate">{contact.name}</span>
-                  <span className={`text-[10.5px] shrink-0 ml-2 ${contact.unread > 0 ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'}`}>
-                    {contact.time}
+                  <span className="text-[13.5px] font-medium text-[var(--text)] truncate">{contactName}</span>
+                  <span className={`text-[10.5px] shrink-0 ml-2 text-[var(--text-muted)]`}>
+                    {contact.last_message ? new Date(contact.last_message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[var(--text-muted)] truncate">{contact.lastMsg}</span>
-                  {contact.unread > 0 && (
-                    <span className="ml-2 shrink-0 h-4.5 min-w-[18px] rounded-full bg-[var(--accent)] text-white text-[9px] font-bold flex items-center justify-center px-1 shadow-[0_0_8px_var(--accent-glow)]">
-                      {contact.unread}
-                    </span>
-                  )}
+                  <span className="text-xs text-[var(--text-muted)] truncate">
+                    {contact.last_message?.text || 'No messages yet'}
+                  </span>
                 </div>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       </div>
 
@@ -237,14 +271,12 @@ const Chat = () => {
         <div className="h-14 flex items-center justify-between px-5 border-b border-[var(--border)] bg-[var(--bg-panel)]">
           <div className="flex items-center gap-3 cursor-pointer group">
             <div className="relative">
-              <Avatar fallback="ET" className="h-9 w-9 text-[11px]" />
-              <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-green-500 border-2 border-[var(--bg-panel)]" />
+              <Avatar fallback="CH" className="h-9 w-9 text-[11px]" />
             </div>
             <div>
               <h3 className="text-[14px] font-semibold text-[var(--text)] group-hover:text-indigo-400 transition-colors">
-                Engineering Team
+                Chat
               </h3>
-              <p className="text-[11px] text-[var(--text-muted)]">John, Sarah, Design Sync, You</p>
             </div>
           </div>
             <div className="flex items-center gap-4 text-[var(--text-muted)]">
@@ -266,8 +298,8 @@ const Chat = () => {
             </span>
           </div>
 
-          {MESSAGES.map((msg) => (
-            <Message key={msg.id} msg={msg} />
+          {messages.map((msg) => (
+            <Message key={msg.id} msg={msg} currentUsername={user?.username} />
           ))}
         </div>
 
@@ -286,11 +318,15 @@ const Chat = () => {
               placeholder="Type a message…"
               value={inputVal}
               onChange={(e) => setInputVal(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSend();
+              }}
               className="flex-1 bg-transparent border-none focus:outline-none text-[14px] text-[var(--text)] placeholder:text-[var(--text-muted)]"
             />
           </div>
 
           <button
+            onClick={handleSend}
             className={`shrink-0 flex items-center justify-center h-9 w-9 rounded-xl transition-all duration-200 ${
               inputVal.trim()
                 ? 'bg-[var(--accent)] text-white shadow-[0_0_16px_var(--accent-glow)] hover:bg-[var(--accent-hover)]'

@@ -1,12 +1,35 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Zap, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Zap, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { authService } from '../services/auth.service';
+import { setAuthStart, setAuthSuccess, setAuthFailure } from '../store/slices/authSlice';
 
 const Login = () => {
   const [showPass, setShowPass] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { loading, error } = useSelector((state) => state.auth);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!username || !password) return;
+
+    dispatch(setAuthStart());
+    try {
+      const data = await authService.login({ username, password });
+      dispatch(setAuthSuccess({ user: { username } }));
+      navigate('/');
+    } catch (err) {
+      dispatch(setAuthFailure(err.response?.data?.detail || 'Login failed'));
+    }
+  };
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-[var(--bg-base)]">
@@ -27,10 +50,22 @@ const Login = () => {
         </div>
 
         {/* Form */}
-        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+        <form className="space-y-4" onSubmit={handleLogin}>
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-md">
+              {error}
+            </div>
+          )}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Email</label>
-            <Input type="email" placeholder="name@example.com" className="h-11" />
+            <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Username</label>
+            <Input 
+              type="text" 
+              placeholder="johndoe" 
+              className="h-11" 
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
           </div>
 
           <div className="space-y-1.5">
@@ -45,6 +80,9 @@ const Login = () => {
                 type={showPass ? 'text' : 'password'}
                 placeholder="••••••••"
                 className="h-11 pr-10"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
               />
               <button
                 type="button"
@@ -57,11 +95,11 @@ const Login = () => {
           </div>
 
           <Button
-            type="button"
+            type="submit"
             className="w-full h-11 text-[15px] mt-2 gap-2"
-            onClick={() => window.location.href = '/'}
+            disabled={loading}
           >
-            Sign In <ArrowRight className="h-4 w-4" />
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sign In'} <ArrowRight className="h-4 w-4" />
           </Button>
         </form>
 
