@@ -22,8 +22,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized (e.g. refresh token logic here)
-      console.warn('Unauthorized access, redirecting to login...');
+      // Session is invalid/expired — clear it and send the user to log back in.
+      localStorage.removeItem('access_token');
+
+      // Avoid redirect loops if we're already on an auth page.
+      const publicPaths = ['/login', '/signup'];
+      if (!publicPaths.includes(window.location.pathname)) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
