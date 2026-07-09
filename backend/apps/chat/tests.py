@@ -1,19 +1,20 @@
 import json
 from django.test import TestCase, TransactionTestCase
 from django.contrib.auth import get_user_model
+from rest_framework.test import APIClient
 from apps.chat.models import Conversation, Message
 from apps.chat.serializers import ConversationSerializer, MessageSerializer
-
-User = get_user_model()
 from channels.testing import WebsocketCommunicator
 from config.asgi import application
 from rest_framework_simplejwt.tokens import AccessToken
+
+User = get_user_model()
 
 class ChatModelTests(TestCase):
     def setUp(self):
         self.user1 = User.objects.create_user(username='test1', password='pw')
         self.user2 = User.objects.create_user(username='test2', password='pw')
-        self.conversation = Conversation.objects.create(is_group=False)
+        self.conversation = Conversation.objects.create()
         self.conversation.participants.add(self.user1, self.user2)
 
     def test_message_creation(self):
@@ -28,7 +29,7 @@ class ChatModelTests(TestCase):
 class ChatSerializerTests(TestCase):
     def setUp(self):
         self.user1 = User.objects.create_user(username='test1', password='pw')
-        self.conversation = Conversation.objects.create(is_group=False)
+        self.conversation = Conversation.objects.create()
         self.conversation.participants.add(self.user1)
 
     def test_message_serializer(self):
@@ -48,7 +49,7 @@ class ChatConsumerTests(TransactionTestCase):
         user1 = await User.objects.acreate_user(username='ws_user1', password='pw')
         user2 = await User.objects.acreate_user(username='ws_user2', password='pw')
         
-        conversation = await Conversation.objects.acreate(is_group=False)
+        conversation = await Conversation.objects.acreate()
         await conversation.participants.aadd(user1, user2)
 
         # Generate JWT for user1
@@ -62,10 +63,19 @@ class ChatConsumerTests(TransactionTestCase):
         connected, subprotocol = await communicator.connect()
         self.assertTrue(connected)
 
+        # Connect user2 to trigger presence broadcast for user1
+        token2 = str(AccessToken.for_user(user2))
+        communicator2 = WebsocketCommunicator(
+            application,
+            f"/ws/chat/{conversation.id}/?token={token2}"
+        )
+        connected2, subprotocol2 = await communicator2.connect()
+        self.assertTrue(connected2)
+
         # Receive presence broadcast
         response = await communicator.receive_json_from()
         self.assertEqual(response['action'], 'user_online')
-        self.assertEqual(response['user_id'], user1.id)
+        self.assertEqual(response['user_id'], user2.id)
 
         # Send a message with temp_id
         await communicator.send_json_to({
@@ -87,3 +97,60 @@ class ChatConsumerTests(TransactionTestCase):
         self.assertEqual(broadcast_response['sender_id'], user1.id)
 
         await communicator.disconnect()
+        await communicator2.disconnect()
+
+
+class ChatTests(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user1 = User.objects.create_user(
+            username="user1",
+            password="password123"
+        )
+
+        self.user2 = User.objects.create_user(
+            username="user2",
+            password="password123"
+        )
+
+        self.client.force_authenticate(user=self.user1)
+
+        self.conversation = Conversation.objects.create()
+        self.conversation.participants.add(self.user1, self.user2)
+
+        self.message = Message.objects.create(
+            conversation=self.conversation,
+            sender=self.user1,
+            text="Hello"
+        )
+
+    def test_message_creation(self):
+        self.assertEqual(self.message.text, "Hello")
+        self.assertEqual(self.message.sender, self.user1)
+        self.assertEqual(self.message.conversation, self.conversation)
+
+    def test_conversation_participants(self):
+        participants = self.conversation.participants.all()
+
+        self.assertIn(self.user1, participants)
+        self.assertIn(self.user2, participants)
+
+    def test_message_list_api(self):
+        response = self.client.get(
+            f"/api/chat/messages/{self.conversation.id}/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_create_conversation(self):
+        response = self.client.post(
+            "/api/chat/conversations/",
+            {
+                "user_id": self.user1.id
+            },
+            format="json"
+        )
+
+        self.assertIn(response.status_code, [200, 201])
