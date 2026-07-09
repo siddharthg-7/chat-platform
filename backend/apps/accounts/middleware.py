@@ -14,17 +14,28 @@ def get_user(user_id):
 
 class JWTAuthMiddleware(BaseMiddleware):
     async def __call__(self, scope, receive, send):
-        query_string = scope.get('query_string', b'').decode()
-        query_params = parse_qs(query_string)
-        token = query_params.get('token', [None])[0]
+        # Read from Authorization header first
+        headers = dict(scope.get('headers', []))
+        auth_header = headers.get(b'authorization', b'').decode()
+        
+        token = None
+        if auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+        
+        # Fallback to query string for development (Browser WebSocket API limitation)
+        if not token:
+            query_string = scope.get('query_string', b'').decode()
+            query_params = parse_qs(query_string)
+            token = query_params.get('token', [None])[0]
 
         if token:
             try:
-                # Decode JWT
-                decoded_data = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-                user_id = decoded_data.get('user_id')
+                # Use SimpleJWT AccessToken to validate expiry, token type, and blacklist
+                from rest_framework_simplejwt.tokens import AccessToken
+                validated_token = AccessToken(token)
+                user_id = validated_token['user_id']
                 scope['user'] = await get_user(user_id)
-            except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+            except Exception:
                 scope['user'] = AnonymousUser()
         else:
             scope['user'] = AnonymousUser()
