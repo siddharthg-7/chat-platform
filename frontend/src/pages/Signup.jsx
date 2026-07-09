@@ -8,7 +8,6 @@ import { motion } from 'framer-motion';
 import AuthLayout from '@/components/auth/AuthLayout.jsx';
 import { authService } from '../services/auth.service';
 import { setAuthStart, setAuthSuccess, setAuthFailure } from '../store/slices/authSlice';
-import AuthWallpaper from '@/components/AuthWallpaper';
 
 const Signup = () => {
   const [showPass, setShowPass] = useState(false);
@@ -51,10 +50,6 @@ const Signup = () => {
       ));
     }
   };
-
-
-const Signup = () => {
-  const [showPass, setShowPass] = useState(false);
  
   return (
     <AuthLayout wallpaperPosition="right">
@@ -65,7 +60,8 @@ const Signup = () => {
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         className="glass w-full max-w-[420px] rounded-2xl p-3 sm:p-4 shadow-sm"
       >
-        {/* Logo + Header */}
+      {/* Logo + Header */}
+      
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent)]">
             <Zap className="h-7 w-7 text-white" fill="white" />
@@ -74,19 +70,8 @@ const Signup = () => {
             ChatsApp
           </span>
         </div>
-      </header>
+      
 
-        {/* Form */}
-        <form className="space-y-2" onSubmit={(e) => e.preventDefault()}>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">First Name</label>
-              <Input type="text" placeholder="John" className="h-11" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Last Name</label>
-              <Input type="text" placeholder="Doe" className="h-11" />
-            </div>
 
             {/* Form */}
             <form className="space-y-4" onSubmit={handleSignup}>
@@ -195,6 +180,7 @@ const Signup = () => {
                   <span>{error}</span>
                 </div>
               )}
+          </form>
 
         <p className="mt-7 text-center text-[13px] text-[var(--text-muted)]">
           Already have an account?{' '}
