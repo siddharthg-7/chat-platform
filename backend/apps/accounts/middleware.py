@@ -1,9 +1,12 @@
 import jwt
 from django.conf import settings
-from django.contrib.auth.models import AnonymousUser, User
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 from channels.db import database_sync_to_async
 from channels.middleware import BaseMiddleware
 from urllib.parse import parse_qs
+
+User = get_user_model()
 
 @database_sync_to_async
 def get_user(user_id):
