@@ -4,18 +4,19 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Zap, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
+import AuthLayout from '@/components/auth/AuthLayout.jsx';
 
 const Signup = () => {
   const [showPass, setShowPass] = useState(false);
-
+ 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-[var(--bg-base)]">
-
+    <AuthLayout wallpaperPosition="right">
+    
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="glass w-full max-w-md rounded-2xl p-8 sm:p-10 shadow-sm"
+        className="glass w-full max-w-[420px] rounded-2xl p-3 sm:p-4 shadow-sm"
       >
         {/* Logo + Header */}
         <div className="mb-8 flex flex-col items-center text-center">
@@ -27,7 +28,7 @@ const Signup = () => {
         </div>
 
         {/* Form */}
-        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+        <form className="space-y-2" onSubmit={(e) => e.preventDefault()}>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">First Name</label>
@@ -110,7 +111,8 @@ const Signup = () => {
           </Link>
         </p>
       </motion.div>
-    </div>
+    
+    </AuthLayout>
   );
 };
 

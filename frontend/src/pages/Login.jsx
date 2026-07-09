@@ -4,13 +4,14 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Zap, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
+import AuthLayout from '@/components/auth/AuthLayout.jsx';
 
 const Login = () => {
   const [showPass, setShowPass] = useState(false);
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-[var(--bg-base)]">
-
+    <AuthLayout wallpaperPosition="left">
+  
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -103,7 +104,7 @@ const Login = () => {
           </Link>
         </p>
       </motion.div>
-    </div>
+    </AuthLayout>
   );
 };
 
