@@ -59,8 +59,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         if action == 'send_message':
             message_text = data.get('text')
+            temp_id = data.get('temp_id')
             if message_text:
                 message = await self.save_message(self.conversation_id, self.user.id, message_text)
+                
+                # Send ack back to sender for optimistic UI
+                if temp_id:
+                    await self.send(text_data=json.dumps({
+                        'action': 'message_ack',
+                        'temp_id': temp_id,
+                        'message_id': message.id,
+                        'created_at': str(message.created_at)
+                    }))
+                
+                # Broadcast to room
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
