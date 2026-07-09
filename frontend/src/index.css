@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Oswald:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -122,12 +122,20 @@ body {
     --input:      var(--bg-glass);
     --ring:       var(--accent);
   }
+
+  b, strong {
+    font-family: 'Oswald', sans-serif;
+  }
 }
 
 /* ============================================================
    FLAT SURFACE UTILITIES
    ============================================================ */
 @layer utilities {
+  .font-medium, .font-semibold, .font-bold, .font-extrabold {
+    font-family: 'Oswald', sans-serif !important;
+  }
+
   /* kept for backward compat — now renders as flat panel */
   .glass {
     background: var(--bg-panel);

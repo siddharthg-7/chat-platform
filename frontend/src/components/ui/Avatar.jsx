@@ -8,7 +8,7 @@ export const Avatar = React.forwardRef(
         ref={ref}
         className={clsx(
           'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full',
-          'bg-gradient-to-br from-indigo-600 to-purple-600',
+          'bg-[var(--accent)]',
           'text-white font-semibold select-none',
           className
         )}

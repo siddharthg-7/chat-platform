@@ -1,18 +1,14 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
+import { Button } from "../components/ui/Button";
 
-const NotFound = () => {
+export default function NotFound() {
   return (
-    <div className="min-h-full flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex-col">
-      <h1 className="text-9xl font-bold text-gray-900">404</h1>
-      <p className="mt-4 text-xl text-gray-600">Oops! Page not found.</p>
-      <div className="mt-6">
-        <Link to="/" className="text-blue-600 hover:text-blue-500 font-medium">
-          Go back home
-        </Link>
-      </div>
+    <div className="h-screen flex flex-col items-center justify-center bg-ink text-center px-4">
+      <p className="text-5xl font-bold text-white mb-2">404</p>
+      <p className="text-sm text-muted mb-6">This page doesn't exist.</p>
+      <Link to="/dashboard">
+        <Button>Back to dashboard</Button>
+      </Link>
     </div>
   );
-};
-
-export default NotFound;
+}
