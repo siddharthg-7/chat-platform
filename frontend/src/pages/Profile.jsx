@@ -1,32 +1,61 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Avatar } from '@/components/ui/Avatar';
-import { Camera, MapPin, Link as LinkIcon, Mail, Briefcase, Calendar } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Camera, MapPin, Link as LinkIcon, Mail, Briefcase, Calendar, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { useProfile } from '@/context/ProfileContext';
+
+const DEFAULT_COVER_GRADIENT = 'linear-gradient(to bottom right, #4f46e5, #9333ea, #1d4ed8)';
 
 const Profile = () => {
-  const [profile, setProfile] = useState({
-    firstName: 'John',
-    lastName: 'Doe',
-    title: 'Senior Frontend Engineer',
-    email: 'john.doe@example.com',
-    bio: 'Passionate software engineer focused on building scalable frontend architectures and beautiful user experiences.',
-    location: 'San Francisco, CA',
-    company: 'ChatPlatform Inc.',
-    website: 'github.com/johndoe',
-  });
+  const { profile, updateProfile } = useProfile();
+  const navigate = useNavigate();
 
   const [form, setForm] = useState({ ...profile });
+  const [savedFlash, setSavedFlash] = useState(false);
+
+  const avatarInputRef = useRef(null);
+  const coverInputRef = useRef(null);
 
   const handleSave = (e) => {
     e.preventDefault();
-    setProfile({ ...form });
+    updateProfile({ ...form });
+    setSavedFlash(true);
+    navigate('/'); // Dashboard is at root path "/"
   };
 
   const handleCancel = () => {
     setForm({ ...profile });
+  };
+
+  const readFileAsDataUrl = (file, onLoad) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please choose an image file.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => onLoad(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleAvatarChange = (e) => {
+    readFileAsDataUrl(e.target.files?.[0], (url) => {
+      setForm((f) => ({ ...f, avatarUrl: url }));
+      updateProfile({ avatarUrl: url });
+    });
+    e.target.value = '';
+  };
+
+  const handleCoverChange = (e) => {
+    readFileAsDataUrl(e.target.files?.[0], (url) => {
+      setForm((f) => ({ ...f, coverUrl: url }));
+      updateProfile({ coverUrl: url });
+    });
+    e.target.value = '';
   };
 
   return (
@@ -40,10 +69,19 @@ const Profile = () => {
           transition={{ duration: 0.4 }}
           className="relative"
         >
-          {/* Banner */}
           <div className="h-52 w-full rounded-2xl overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700" />
-            {/* Glassmorphism overlay pattern */}
+            {form.coverUrl ? (
+              <img
+                src={form.coverUrl}
+                alt="Profile cover"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : (
+              <div
+                className="absolute inset-0"
+                style={{ background: DEFAULT_COVER_GRADIENT }}
+              />
+            )}
             <div
               className="absolute inset-0 opacity-20"
               style={{
@@ -53,26 +91,43 @@ const Profile = () => {
             <Button
               variant="secondary"
               size="sm"
+              type="button"
+              onClick={() => coverInputRef.current?.click()}
               className="absolute top-4 right-4 glass border-white/20 hover:border-white/40 text-xs text-foreground"
             >
               <Camera className="h-3.5 w-3.5 mr-1.5" /> Change Cover
             </Button>
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleCoverChange}
+            />
           </div>
 
-          {/* Avatar overlapping banner */}
           <div className="absolute -bottom-14 left-6 flex items-end gap-4">
             <div className="relative">
               <Avatar
-                src="https://i.pravatar.cc/150?u=a042581f4e29026704d"
-                fallback="JD"
+                src={form.avatarUrl}
+                fallback={`${form.firstName?.[0] ?? ''}${form.lastName?.[0] ?? ''}`.toUpperCase()}
                 className="h-28 w-28 border-4 border-[var(--bg-surface)] shadow-md"
               />
               <Button
                 size="icon"
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
                 className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full text-xs shadow-md"
               >
                 <Camera className="h-3.5 w-3.5" />
               </Button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
             </div>
             <div className="mb-0">
               <h1 className="text-xl font-bold text-foreground">{profile.firstName} {profile.lastName}</h1>
@@ -81,10 +136,8 @@ const Profile = () => {
           </div>
         </motion.div>
 
-        {/* Main Content — offset for avatar overlap */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-16">
 
-          {/* Left: Info Card */}
           <motion.div
             initial={{ opacity: 0, x: -16 }}
             animate={{ opacity: 1, x: 0 }}
@@ -119,7 +172,6 @@ const Profile = () => {
             </Card>
           </motion.div>
 
-          {/* Right: Edit Form */}
           <motion.div
             className="md:col-span-2"
             initial={{ opacity: 0, x: 16 }}
@@ -128,8 +180,24 @@ const Profile = () => {
           >
             <Card>
               <CardHeader>
-                <CardTitle>Profile Settings</CardTitle>
-                <CardDescription>Update your personal information and public profile.</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Profile Settings</CardTitle>
+                    <CardDescription>Update your personal information and public profile.</CardDescription>
+                  </div>
+                  <AnimatePresence>
+                    {savedFlash && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        className="flex items-center gap-1.5 text-xs font-medium text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full"
+                      >
+                        <Check className="h-3.5 w-3.5" /> Saved
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </CardHeader>
               <CardContent>
                 <form className="space-y-5" onSubmit={handleSave}>

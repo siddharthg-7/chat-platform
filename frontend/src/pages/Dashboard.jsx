@@ -1,37 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
-import { MessageSquare, Users, Activity, ArrowUpRight, Plus, Search, TrendingUp, Wifi, Database, Server, UserCircle } from 'lucide-react';
+import { MessageSquare, Users, Activity, ArrowUpRight, Plus, Search, TrendingUp, Wifi, Database, Server, UserCircle, X, Mail, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const STATS = [
-  {
-    title: 'Total Messages',
-    value: '24,593',
-    change: '+12.5%',
-    icon: MessageSquare,
-    gradient: '',
-    glow: '',
-  },
-  {
-    title: 'Total Contacts',
-    value: '1,205',
-    change: '+4.1%',
-    icon: Users,
-    gradient: '',
-    glow: '',
-  },
-  {
-    title: 'Platform Uptime',
-    value: '99.99%',
-    change: '+0.0%',
-    icon: Activity,
-    gradient: '',
-    glow: '',
-  },
+  { title: 'Total Messages', value: '24,593', change: '+12.5%', icon: MessageSquare },
+  { title: 'Total Contacts', value: '1,205', change: '+4.1%', icon: Users },
+  { title: 'Platform Uptime', value: '99.99%', change: '+0.0%', icon: Activity },
 ];
 
 const RECENT_CHATS = [
@@ -63,6 +43,34 @@ const statusColor = {
 };
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const [showSupportModal, setShowSupportModal] = useState(false);
+
+  const handleQuickAction = (action) => {
+    switch (action) {
+      case 'Add Contact':
+        {
+          const username = window.prompt('Enter username to add as contact:');
+          if (username && username.trim()) {
+            // Hook this up to your real "add contact" API when ready
+            navigate('/chat');
+          }
+        }
+        break;
+      case 'New Chat':
+        navigate('/chat');
+        break;
+      case 'Settings':
+        navigate('/settings');
+        break;
+      case 'Support':
+        setShowSupportModal(true);
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-surface)]">
       <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-7">
@@ -83,22 +91,16 @@ const Dashboard = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
               <Input type="search" placeholder="Search…" className="pl-9 h-9" />
             </div>
-            <Button className="gap-2 h-9">
+            <Button className="gap-2 h-9" onClick={() => navigate('/chat')}>
               <Plus className="h-4 w-4" /> New Chat
             </Button>
           </div>
         </motion.div>
 
-        {/* Upper Grid: Recent Chats + Profile */}
+        {/* Upper Grid */}
         <div className="grid gap-4 lg:grid-cols-3">
 
-          {/* Recent Chats — spans 2 cols */}
-          <motion.div
-            className="lg:col-span-2"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25, duration: 0.4 }}
-          >
+          <motion.div className="lg:col-span-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.4 }}>
             <Card className="h-full">
               <CardHeader>
                 <div className="flex flex-row items-center justify-between">
@@ -106,7 +108,7 @@ const Dashboard = () => {
                     <CardTitle>Recent Chats</CardTitle>
                     <CardDescription className="mt-0.5">You have 3 unread messages.</CardDescription>
                   </div>
-                  <Button variant="ghost" size="sm" className="text-xs gap-1">
+                  <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate('/chat')}>
                     View all <ArrowUpRight className="h-3 w-3" />
                   </Button>
                 </div>
@@ -118,12 +120,10 @@ const Dashboard = () => {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 + i * 0.06 }}
+                    onClick={() => navigate('/chat')}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[var(--bg-glass-hover)] transition-all duration-150 group"
                   >
-                    <Avatar
-                      fallback={chat.name.substring(0, 2).toUpperCase()}
-                      className="h-10 w-10 text-sm shrink-0 group-hover:ring-2 group-hover:ring-[var(--accent)] transition-all duration-200"
-                    />
+                    <Avatar fallback={chat.name.substring(0, 2).toUpperCase()} className="h-10 w-10 text-sm shrink-0 group-hover:ring-2 group-hover:ring-[var(--accent)] transition-all duration-200" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-sm font-medium text-[var(--text)] truncate">{chat.name}</span>
@@ -142,12 +142,7 @@ const Dashboard = () => {
             </Card>
           </motion.div>
 
-          {/* Profile (Swapped with System Status) */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}>
             <Card className="h-full">
               <CardHeader>
                 <CardTitle>Profile</CardTitle>
@@ -173,7 +168,7 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                <Button variant="outline" size="sm" className="w-full text-xs gap-2">
+                <Button variant="outline" size="sm" className="w-full text-xs gap-2" onClick={() => navigate('/profile')}>
                   <UserCircle className="h-3.5 w-3.5" /> Edit Profile
                 </Button>
               </CardContent>
@@ -182,16 +177,10 @@ const Dashboard = () => {
 
         </div>
 
-        {/* Lower Grid: All Contacts + System Status */}
+        {/* Lower Grid */}
         <div className="grid gap-4 lg:grid-cols-3">
 
-          {/* All Contacts — spans 2 cols */}
-          <motion.div
-            className="lg:col-span-2"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.4 }}
-          >
+          <motion.div className="lg:col-span-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.4 }}>
             <Card className="h-full">
               <CardHeader>
                 <div className="flex flex-row items-center justify-between">
@@ -199,7 +188,7 @@ const Dashboard = () => {
                     <CardTitle>All Contacts</CardTitle>
                     <CardDescription className="mt-0.5">Everyone you can chat with.</CardDescription>
                   </div>
-                  <Button variant="ghost" size="sm" className="text-xs gap-1">
+                  <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate('/chat')}>
                     View all <ArrowUpRight className="h-3 w-3" />
                   </Button>
                 </div>
@@ -211,16 +200,12 @@ const Dashboard = () => {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.4 + i * 0.05 }}
+                    onClick={() => navigate('/chat')}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[var(--bg-glass-hover)] transition-all duration-150 group"
                   >
                     <div className="relative shrink-0">
-                      <Avatar
-                        fallback={contact.name.substring(0, 2).toUpperCase()}
-                        className="h-9 w-9 text-xs group-hover:ring-2 group-hover:ring-[var(--accent)] transition-all duration-200"
-                      />
-                      <span
-                        className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-[var(--bg-surface)] ${statusColor[contact.status]}`}
-                      />
+                      <Avatar fallback={contact.name.substring(0, 2).toUpperCase()} className="h-9 w-9 text-xs group-hover:ring-2 group-hover:ring-[var(--accent)] transition-all duration-200" />
+                      <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-[var(--bg-surface)] ${statusColor[contact.status]}`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <span className="text-sm font-medium text-[var(--text)] truncate block">{contact.name}</span>
@@ -232,19 +217,13 @@ const Dashboard = () => {
             </Card>
           </motion.div>
 
-          {/* System Status + Quick Actions (Swapped with Profile) */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.4 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.4 }}>
             <Card className="h-full">
               <CardHeader>
                 <CardTitle>System Status</CardTitle>
                 <CardDescription>Real-time platform metrics</CardDescription>
               </CardHeader>
               <CardContent className="space-y-5 pt-0">
-
                 <div className="space-y-2.5">
                   {STATUS_ITEMS.map(({ label, status, icon: Icon, variant }) => (
                     <div key={label} className="flex items-center justify-between">
@@ -261,7 +240,7 @@ const Dashboard = () => {
                   <h4 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">Quick Actions</h4>
                   <div className="grid grid-cols-2 gap-2">
                     {['Add Contact', 'New Chat', 'Settings', 'Support'].map((action) => (
-                      <Button key={action} variant="outline" size="sm" className="w-full text-xs">
+                      <Button key={action} variant="outline" size="sm" className="w-full text-xs" onClick={() => handleQuickAction(action)}>
                         {action}
                       </Button>
                     ))}
@@ -273,15 +252,10 @@ const Dashboard = () => {
 
         </div>
 
-        {/* Stats Grid (Moved to bottom) */}
+        {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-3 pb-8">
           {STATS.map((stat, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.45 + i * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            >
+            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 + i * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
               <Card className="hover:border-[var(--border-active)] transition-all duration-200">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
@@ -305,6 +279,76 @@ const Dashboard = () => {
         </div>
 
       </div>
+
+      {/* Support Modal */}
+      <AnimatePresence>
+        {showSupportModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+            onClick={() => setShowSupportModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-sm shadow-2xl relative"
+            >
+              <button
+                onClick={() => setShowSupportModal(false)}
+                className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <h3 className="text-lg font-semibold text-[var(--text)] mb-1">Need Help?</h3>
+              <p className="text-sm text-[var(--text-muted)] mb-5">
+                Our support team is here for you 24/7. Reach out anytime.
+              </p>
+
+              <div className="space-y-3 text-sm mb-5">
+                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-[var(--bg-glass-hover)]">
+                  <Mail className="h-4 w-4 text-[var(--accent)] shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[11px] text-[var(--text-muted)]">Email</p>
+                    <p className="text-[var(--text)] font-medium truncate">support@example.com</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-[var(--bg-glass-hover)]">
+                  <Clock className="h-4 w-4 text-[var(--accent)] shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[11px] text-[var(--text-muted)]">Avg. Response Time</p>
+                    <p className="text-[var(--text)] font-medium">~2 hours</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => (window.location.href = 'mailto:support@example.com')}
+                >
+                  Email Us
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setShowSupportModal(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
