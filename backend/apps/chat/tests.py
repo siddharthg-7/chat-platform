@@ -1,8 +1,10 @@
 import json
 from django.test import TestCase, TransactionTestCase
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from apps.chat.models import Conversation, Message
 from apps.chat.serializers import ConversationSerializer, MessageSerializer
+
+User = get_user_model()
 from channels.testing import WebsocketCommunicator
 from config.asgi import application
 from rest_framework_simplejwt.tokens import AccessToken
