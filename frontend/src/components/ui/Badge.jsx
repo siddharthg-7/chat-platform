@@ -1,28 +1,30 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { clsx } from 'clsx';
 
-const Badge = React.forwardRef(({ className, variant = 'default', ...props }, ref) => {
-  const variants = {
-    default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-    secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-    destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-    outline: "text-foreground",
-    success: "border-transparent bg-emerald-500 text-white hover:bg-emerald-600",
-  };
+const variants = {
+  default: 'bg-[var(--accent)] text-white border-transparent',
+  outline: 'bg-transparent text-[var(--text-muted)] border-[var(--border)]',
+  success: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
+  warning: 'bg-amber-500/15 text-amber-400 border-amber-500/20',
+  danger:  'bg-rose-500/15 text-rose-400 border-rose-500/20',
+  info:    'bg-blue-500/15 text-blue-400 border-blue-500/20',
+};
 
-  return (
-    <div
+export const Badge = React.forwardRef(
+  ({ className, variant = 'default', children, ...props }, ref) => (
+    <span
       ref={ref}
-      className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-        variants[variant],
+      className={clsx(
+        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5',
+        'text-[11px] font-semibold tracking-wide',
+        'transition-colors duration-150',
+        variants[variant] ?? variants.default,
         className
       )}
       {...props}
-    />
-  );
-});
-
-Badge.displayName = "Badge";
-
-export { Badge };
+    >
+      {children}
+    </span>
+  )
+);
+Badge.displayName = 'Badge';

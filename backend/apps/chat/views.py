@@ -1,19 +1,19 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-
+from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
-
-from .models import Conversation, Message
+from .models import Conversation, Message, Attachment
 from .serializers import ConversationSerializer, MessageSerializer
 from .services import create_conversation, get_messages, send_message
 # -------------------------
 # CONVERSATION API
 # -------------------------
 class ConversationListView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        conversations = Conversation.objects.all()
+        conversations = request.user.conversations.all()
         serializer = ConversationSerializer(conversations, many=True)
         return Response(serializer.data)
 
@@ -42,6 +42,7 @@ class ConversationListView(APIView):
 # MESSAGE LIST API
 # -------------------------
 class MessageListView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, conversation_id):
         messages = get_messages(conversation_id)

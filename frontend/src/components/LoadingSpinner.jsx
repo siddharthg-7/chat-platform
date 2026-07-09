@@ -1,11 +1,11 @@
-import React from 'react';
+import Loader from "./ui/Loader";
+import { cn } from "../lib/utils";
 
-const LoadingSpinner = () => {
+export default function LoadingSpinner({ size = 20, className, label }) {
   return (
-    <div className="flex justify-center items-center h-full w-full">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    <div className={cn("flex items-center justify-center gap-2 text-muted", className)}>
+      <Loader size={size} />
+      {label && <span className="text-sm">{label}</span>}
     </div>
   );
-};
-
-export default LoadingSpinner;
+}
