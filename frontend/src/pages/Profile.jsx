@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Avatar } from '@/components/ui/Avatar';
 import { Camera, MapPin, Link as LinkIcon, Mail, Briefcase, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
+
+const DEFAULT_COVER_GRADIENT = 'linear-gradient(to bottom right, #4f46e5, #9333ea, #1d4ed8)';
 
 const Profile = () => {
   const [profile, setProfile] = useState({
@@ -20,6 +22,13 @@ const Profile = () => {
 
   const [form, setForm] = useState({ ...profile });
 
+  // Avatar & cover image state
+  const [avatarUrl, setAvatarUrl] = useState('https://i.pravatar.cc/150?u=a042581f4e29026704d');
+  const [coverUrl, setCoverUrl] = useState(null); // null = default gradient shown
+
+  const avatarInputRef = useRef(null);
+  const coverInputRef = useRef(null);
+
   const handleSave = (e) => {
     e.preventDefault();
     setProfile({ ...form });
@@ -27,6 +36,28 @@ const Profile = () => {
 
   const handleCancel = () => {
     setForm({ ...profile });
+  };
+
+  // Generic helper: read a chosen file as a data URL and hand it to a setter
+  const readFileAsDataUrl = (file, setter) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please choose an image file.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => setter(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleAvatarChange = (e) => {
+    readFileAsDataUrl(e.target.files?.[0], setAvatarUrl);
+    e.target.value = ''; // allow re-selecting the same file later
+  };
+
+  const handleCoverChange = (e) => {
+    readFileAsDataUrl(e.target.files?.[0], setCoverUrl);
+    e.target.value = '';
   };
 
   return (
@@ -42,7 +73,18 @@ const Profile = () => {
         >
           {/* Banner */}
           <div className="h-52 w-full rounded-2xl overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700" />
+            {coverUrl ? (
+              <img
+                src={coverUrl}
+                alt="Profile cover"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : (
+              <div
+                className="absolute inset-0"
+                style={{ background: DEFAULT_COVER_GRADIENT }}
+              />
+            )}
             {/* Glassmorphism overlay pattern */}
             <div
               className="absolute inset-0 opacity-20"
@@ -53,26 +95,44 @@ const Profile = () => {
             <Button
               variant="secondary"
               size="sm"
+              type="button"
+              onClick={() => coverInputRef.current?.click()}
               className="absolute top-4 right-4 glass border-white/20 hover:border-white/40 text-xs text-foreground"
             >
               <Camera className="h-3.5 w-3.5 mr-1.5" /> Change Cover
             </Button>
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleCoverChange}
+            />
           </div>
 
           {/* Avatar overlapping banner */}
           <div className="absolute -bottom-14 left-6 flex items-end gap-4">
             <div className="relative">
               <Avatar
-                src="https://i.pravatar.cc/150?u=a042581f4e29026704d"
+                src={avatarUrl}
                 fallback="JD"
                 className="h-28 w-28 border-4 border-[var(--bg-surface)] shadow-md"
               />
               <Button
                 size="icon"
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
                 className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full text-xs shadow-md"
               >
                 <Camera className="h-3.5 w-3.5" />
               </Button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
             </div>
             <div className="mb-0">
               <h1 className="text-xl font-bold text-foreground">{profile.firstName} {profile.lastName}</h1>

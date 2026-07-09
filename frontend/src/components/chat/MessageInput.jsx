@@ -5,21 +5,32 @@ import {
   Send,
 } from "lucide-react";
 
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { chatService } from '@/services/chat.service';
+import { addMessage } from '@/store/slices/chatSlice';
 
 const MessageInput = () => {
   const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const dispatch = useDispatch();
   const { activeConversation } = useSelector((state) => state.chat);
 
   const handleSend = async () => {
-    if (!message.trim() || !activeConversation) return;
+    if (!message.trim() || !activeConversation || sending) return;
+
+    const textToSend = message.trim();
+    setMessage(""); // optimistic clear
+    setSending(true);
 
     try {
-      await chatService.sendMessage(activeConversation, message.trim());
-      setMessage("");
+      const sentMessage = await chatService.sendMessage(activeConversation, textToSend);
+      // Push into redux store immediately so it shows up without waiting on WS echo
+      dispatch(addMessage(sentMessage));
     } catch (error) {
       console.error("Failed to send message:", error);
+      setMessage(textToSend); // restore text so user doesn't lose it
+    } finally {
+      setSending(false);
     }
   };
 
@@ -27,26 +38,26 @@ const MessageInput = () => {
     <footer className="border-t border-wa-border bg-wa-panel p-4">
       <div className="flex items-center gap-3">
 
-        {/* Emoji */}
         <button
+          type="button"
           className="rounded-full p-2 text-wa-text-muted transition hover:bg-wa-panel-hover hover:text-wa-text"
         >
           <Smile className="h-5 w-5" />
         </button>
 
-        {/* Attachment */}
         <button
+          type="button"
           className="rounded-full p-2 text-wa-text-muted transition hover:bg-wa-panel-hover hover:text-wa-text"
         >
           <Paperclip className="h-5 w-5" />
         </button>
 
-        {/* Input */}
         <input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
               handleSend();
             }
           }}
@@ -67,9 +78,10 @@ const MessageInput = () => {
           "
         />
 
-        {/* Send */}
         <button
+          type="button"
           onClick={handleSend}
+          disabled={!message.trim() || sending}
           className="
             flex
             h-11
@@ -82,6 +94,9 @@ const MessageInput = () => {
             transition
             hover:scale-105
             hover:opacity-90
+            disabled:opacity-40
+            disabled:cursor-not-allowed
+            disabled:hover:scale-100
           "
         >
           <Send className="h-5 w-5" />
