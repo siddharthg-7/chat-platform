@@ -35,12 +35,19 @@ api.interceptors.response.use(
         } catch (refreshError) {
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
-          window.location.href = '/login';
+          
+          const publicPaths = ['/login', '/signup'];
+          if (!publicPaths.includes(window.location.pathname)) {
+            window.location.href = '/login';
+          }
           return Promise.reject(refreshError);
         }
       } else {
         localStorage.removeItem('access_token');
-        window.location.href = '/login';
+        const publicPaths = ['/login', '/signup'];
+        if (!publicPaths.includes(window.location.pathname)) {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);
