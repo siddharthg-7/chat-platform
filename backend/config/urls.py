@@ -12,7 +12,6 @@ urlpatterns = [
     # Apps Routing
     path('api/accounts/', include('apps.accounts.urls')),
     path('api/chat/', include('apps.chat.urls')),
-    path('api/conversations/', include('apps.conversations.urls')),
     path('api/notifications/', include('apps.notifications.urls')),
     path('api/common/', include('apps.common.urls')),
 ]

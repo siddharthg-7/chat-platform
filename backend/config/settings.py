@@ -7,12 +7,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / '.env')
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'default-insecure-key')
-DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is required and cannot be empty.")
+
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
 INSTALLED_APPS = [
-    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -23,6 +25,7 @@ INSTALLED_APPS = [
     # Third party
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'channels',
     'drf_spectacular',
@@ -30,7 +33,6 @@ INSTALLED_APPS = [
     # Local apps
     'apps.accounts',
     'apps.chat',
-    'apps.conversations',
     'apps.notifications',
     'apps.common',
 ]
@@ -114,7 +116,12 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = True
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost').split(',')
+
 CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {
@@ -129,3 +136,5 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'SIGNING_KEY': os.environ.get('JWT_SECRET', SECRET_KEY),
 }
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

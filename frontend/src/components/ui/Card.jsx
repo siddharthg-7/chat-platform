@@ -1,34 +1,74 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { clsx } from 'clsx';
 
-const Card = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("rounded-xl border bg-card text-card-foreground shadow-sm", className)} {...props} />
+export const Card = React.forwardRef(({ className, children, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={clsx(
+      'rounded-xl border border-[var(--border)]',
+      'bg-[var(--bg-glass)] backdrop-blur-sm',
+      'shadow-sm',
+      'transition-all duration-200',
+      className
+    )}
+    {...props}
+  >
+    {children}
+  </div>
 ));
-Card.displayName = "Card";
+Card.displayName = 'Card';
 
-const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />
+export const CardHeader = React.forwardRef(({ className, children, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={clsx('flex flex-col space-y-1 p-5 pb-3', className)}
+    {...props}
+  >
+    {children}
+  </div>
 ));
-CardHeader.displayName = "CardHeader";
+CardHeader.displayName = 'CardHeader';
 
-const CardTitle = React.forwardRef(({ className, ...props }, ref) => (
-  <h3 ref={ref} className={cn("text-2xl font-semibold leading-none tracking-tight", className)} {...props} />
+export const CardTitle = React.forwardRef(({ className, children, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={clsx('text-[15px] font-semibold tracking-tight text-[var(--text)]', className)}
+    {...props}
+  >
+    {children}
+  </h3>
 ));
-CardTitle.displayName = "CardTitle";
+CardTitle.displayName = 'CardTitle';
 
-const CardDescription = React.forwardRef(({ className, ...props }, ref) => (
-  <p ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
+export const CardDescription = React.forwardRef(({ className, children, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={clsx('text-xs text-[var(--text-muted)] leading-relaxed', className)}
+    {...props}
+  >
+    {children}
+  </p>
 ));
-CardDescription.displayName = "CardDescription";
+CardDescription.displayName = 'CardDescription';
 
-const CardContent = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+export const CardContent = React.forwardRef(({ className, children, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={clsx('p-5 pt-2', className)}
+    {...props}
+  >
+    {children}
+  </div>
 ));
-CardContent.displayName = "CardContent";
+CardContent.displayName = 'CardContent';
 
-const CardFooter = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("flex items-center p-6 pt-0", className)} {...props} />
+export const CardFooter = React.forwardRef(({ className, children, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={clsx('flex items-center p-5 pt-3', className)}
+    {...props}
+  >
+    {children}
+  </div>
 ));
-CardFooter.displayName = "CardFooter";
-
-export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter };
+CardFooter.displayName = 'CardFooter';
