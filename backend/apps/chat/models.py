@@ -1,10 +1,10 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 
 
 class Conversation(models.Model):
     participants = models.ManyToManyField(
-        User,
+        settings.AUTH_USER_MODEL,
         related_name="conversations"
     )
     created_at = models.DateTimeField(auto_now_add=True)
@@ -21,7 +21,7 @@ class Message(models.Model):
         related_name="messages"
     )
     sender = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="sent_messages"
     )
