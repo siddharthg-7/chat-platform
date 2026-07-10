@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import Profile
+
 from django.contrib.auth.password_validation import validate_password
 
 User = get_user_model()
@@ -74,4 +75,3 @@ class ResetPasswordSerializer(serializers.Serializer):
     # Accept the new password from the user.
     # write_only=True ensures it is never returned in API responses.
     new_password = serializers.CharField(write_only=True,required=True,)
-    
