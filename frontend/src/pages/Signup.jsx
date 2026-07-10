@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Zap, ArrowRight, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import AuthLayout from '@/components/auth/AuthLayout.jsx';
 import { authService } from '../services/auth.service';
 import { setAuthStart, setAuthSuccess, setAuthFailure } from '../store/slices/authSlice';
-import AuthWallpaper from '@/components/AuthWallpaper';
 
 const Signup = () => {
   const [showPass, setShowPass] = useState(false);
@@ -50,40 +50,28 @@ const Signup = () => {
       ));
     }
   };
-
+ 
   return (
-    <div className="flex h-screen w-full flex-col bg-[var(--bg-base)]">
-      {/* Header */}
-      <header className="flex h-16 shrink-0 items-center border-b border-[var(--border)] px-6 lg:px-10">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent)]">
-            <Zap className="h-4 w-4 text-white" fill="white" />
+    <AuthLayout wallpaperPosition="right">
+    
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        className="glass w-full max-w-[420px] rounded-2xl p-3 sm:p-4 shadow-sm"
+      >
+      {/* Logo + Header */}
+      
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent)]">
+            <Zap className="h-7 w-7 text-white" fill="white" />
           </div>
           <span className="text-[15px] font-bold tracking-tight text-[var(--text)]">
             ChatsApp
           </span>
         </div>
-      </header>
+      
 
-      {/* Body */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left: static wallpaper */}
-        <div className="relative hidden flex-1 lg:block">
-          <AuthWallpaper />
-        </div>
-
-        {/* Right: auth panel */}
-        <div className="flex w-full flex-1 items-center justify-center overflow-y-auto border-[var(--border)] px-6 py-10 lg:w-[440px] lg:flex-none lg:border-l">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full max-w-sm"
-          >
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold tracking-tight text-[var(--text)]">Create an account</h1>
-              <p className="mt-1.5 text-sm text-[var(--text-muted)]">Join thousands of teams already on the platform</p>
-            </div>
 
             {/* Form */}
             <form className="space-y-4" onSubmit={handleSignup}>
@@ -196,26 +184,25 @@ const Signup = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 text-[15px] mt-1 gap-2 disabled:opacity-60"
+                className="w-full h-11 text-[15px] mt-2 gap-2"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-                  <>
-                    Create Account <ArrowRight className="h-4 w-4" />
-                  </>
+                {loading ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Creating account…</>
+                ) : (
+                  <>Create Account <ArrowRight className="h-4 w-4" /></>
                 )}
               </Button>
-            </form>
+          </form>
 
-            <p className="mt-7 text-center text-[13px] text-[var(--text-muted)]">
-              Already have an account?{' '}
-              <Link to="/login" className="text-[var(--accent)] hover:text-indigo-400 font-medium transition-colors">
-                Sign in
-              </Link>
-            </p>
-          </motion.div>
-        </div>
-      </div>
-    </div>
+        <p className="mt-7 text-center text-[13px] text-[var(--text-muted)]">
+          Already have an account?{' '}
+          <Link to="/login" className="text-[var(--accent)] hover:text-indigo-400 font-medium transition-colors">
+            Sign in
+          </Link>
+        </p>
+      </motion.div>
+    
+    </AuthLayout>
   );
 };
 

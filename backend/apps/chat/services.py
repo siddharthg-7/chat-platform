@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Count
 from .models import Conversation, Message, Attachment
 
 User = get_user_model()
@@ -12,8 +13,15 @@ def create_conversation(user1, user2_id):
     except User.DoesNotExist:
         return None, "User not found"
 
-    # Check if conversation already exists
-    existing_conv = user1.conversations.filter(participants=user2).first()
+    # Check for an existing 1-on-1 conversation between these two users
+    existing_conv = (
+        Conversation.objects
+        .filter(participants=user1)
+        .filter(participants=user2)
+        .annotate(cnt=Count('participants'))
+        .filter(cnt=2)
+        .first()
+    )
     if existing_conv:
         return existing_conv, "exists"
 
@@ -25,8 +33,6 @@ def create_conversation(user1, user2_id):
 
 def get_messages(conversation_id):
     return Message.objects.filter(conversation_id=conversation_id)
-
-
 def send_message(user, conversation_id, text, files=None):
     if not conversation_id:
         return None, "conversation is required"
