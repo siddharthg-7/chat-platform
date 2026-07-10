@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import SignupSerializer, UserSerializer, ProfileSerializer
+from .serializers import (SignupSerializer, UserSerializer, ProfileSerializer, ChangePasswordSerializer,)
 
 class SignupView(generics.CreateAPIView):
     permission_classes = [AllowAny]
@@ -74,3 +74,28 @@ class UpdateProfileDetailsView(generics.UpdateAPIView):
 
     def get_object(self):
         return self.request.user.profile
+    
+class ChangePasswordView(generics.UpdateAPIView):
+    """
+    Allows an authenticated user to change their password.
+    """
+
+    permission_classes = [IsAuthenticated]
+    # Only logged-in user should be allowed to change their password.
+    # Without a valid JWT access token, the request will be rejected before reaching the view.
+    serializer_class = ChangePasswordSerializer
+    #It tells DRF which object is being updated.Here it is always the currently authenticated user.
+    def get_object(self):
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data,context={"request": request},)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            {
+                "message": "Password changed successfully."
+            },
+            status=status.HTTP_200_OK,
+        )

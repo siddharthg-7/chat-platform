@@ -8,6 +8,7 @@ class AccountsAPITest(APITestCase):
         self.signup_url = reverse('signup')
         self.login_url = reverse('token_obtain_pair')
         self.logout_url = reverse("logout")
+        self.change_password_url = reverse("change_password")
         self.profile_url = reverse('profile')
         self.user_data = {
             'username': 'testuser',
@@ -127,3 +128,89 @@ class AccountsAPITest(APITestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data["error"],"Invalid or expired refresh token")
         self.assertEqual(response.data["code"],"invalid_token")
+
+    def test_change_password_success(self):
+    # Create user
+        self.client.post(self.signup_url, self.user_data)
+
+    # Login
+        login_response = self.client.post(self.login_url,
+        {
+            "username": "testuser",
+            "password": "testpassword123",
+        },
+        content_type="application/json",
+    )
+
+        access_token = login_response.data["access"]
+
+    # Authenticate using access token
+        self.client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {access_token}"
+    )
+
+    # Change password
+        response = self.client.put(self.change_password_url,
+        {
+            "old_password": "testpassword123",
+            "new_password": "TestPassword@456",
+        },
+        content_type="application/json",
+    )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["message"],"Password changed successfully.")
+
+    # Verify login with new password
+        self.client.credentials()
+        login_response = self.client.post(self.login_url,
+        {
+            "username": "testuser",
+            "password": "TestPassword@456",
+        },
+        content_type="application/json",
+    )
+
+        self.assertEqual(login_response.status_code, 200)
+
+    def test_change_password_wrong_old_password(self):
+    # Create user
+        self.client.post(self.signup_url, self.user_data)
+
+    # Login
+        login_response = self.client.post(self.login_url,
+        {
+            "username": "testuser",
+            "password": "testpassword123",
+        },
+        content_type="application/json",
+    )
+
+        access_token = login_response.data["access"]
+
+    # Authenticating
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+
+    # Trying changing password using wrong old password
+        response = self.client.put(self.change_password_url,
+        {
+            "old_password": "WrongPassword123",
+            "new_password": "TestPassword@456",
+        },
+        content_type="application/json",
+    )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data["old_password"][0],"Old password is incorrect.")
+
+    def test_change_password_unauthenticated(self):
+    # Attempting to change password without authentication
+        response = self.client.put(self.change_password_url,
+        {
+            "old_password": "testpassword123",
+            "new_password": "TestPassword@456",
+        },
+        content_type="application/json",
+    )
+
+        self.assertEqual(response.status_code, 401)
