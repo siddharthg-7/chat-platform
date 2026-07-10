@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Search, Plus } from "lucide-react";
 
 import ChatListItem from "./ChatListItem";
+import NewChatModal from "./NewChatModal";
 import { useSelector, useDispatch } from 'react-redux';
 import { setActiveConversation, setConversations } from '@/store/slices/chatSlice';
 import { chatService } from '@/services/chat.service';
@@ -9,6 +10,7 @@ import { chatService } from '@/services/chat.service';
 const ChatSidebar = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all"); // all | groups | unread
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
   const dispatch = useDispatch();
 
   const { conversations, activeConversation, onlineUsers } = useSelector((state) => state.chat);
@@ -47,18 +49,8 @@ const ChatSidebar = () => {
     dispatch(setActiveConversation(chat.id));
   };
 
-  const handleNewChat = async () => {
-    const username = window.prompt("Enter username to start a chat with:");
-    if (!username || !username.trim()) return;
-
-    try {
-      const newConv = await chatService.createConversation(username.trim());
-      dispatch(setConversations([...conversations, newConv]));
-      dispatch(setActiveConversation(newConv.id));
-    } catch (err) {
-      console.error("Failed to create conversation:", err);
-      alert("Could not start chat. Check the username and try again.");
-    }
+  const handleNewChat = () => {
+    setShowNewChatModal(true);
   };
 
   const filterBtn = (key, label) => (
@@ -75,7 +67,8 @@ const ChatSidebar = () => {
   );
 
   return (
-    <aside className="flex h-full flex-col bg-slate-900">
+    <>
+      <aside className="flex h-full flex-col bg-slate-900">
 
       <div className="border-b border-slate-800 px-6 py-5">
 
@@ -132,7 +125,12 @@ const ChatSidebar = () => {
       </div>
 
     </aside>
-  );
+
+    {/* New Chat Modal — rendered outside the aside so it's fullscreen */}
+    {showNewChatModal && (
+      <NewChatModal onClose={() => setShowNewChatModal(false)} />
+    )}
+  </>);
 };
 
 export default ChatSidebar;

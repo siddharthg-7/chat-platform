@@ -77,7 +77,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 return
                 
             self.message_timestamps.append(now)
-
             message_text = data.get('text')
             temp_id = data.get('temp_id')
             if message_text:

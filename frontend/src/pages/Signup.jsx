@@ -180,6 +180,18 @@ const Signup = () => {
                   <span>{error}</span>
                 </div>
               )}
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full h-11 text-[15px] mt-2 gap-2"
+              >
+                {loading ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Creating account…</>
+                ) : (
+                  <>Create Account <ArrowRight className="h-4 w-4" /></>
+                )}
+              </Button>
           </form>
 
         <p className="mt-7 text-center text-[13px] text-[var(--text-muted)]">

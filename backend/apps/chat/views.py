@@ -72,6 +72,8 @@ class MessageListView(generics.ListAPIView):
 # SEND MESSAGE API
 # -------------------------
 class SendMessageView(APIView):
+    permission_classes = [IsAuthenticated]  # This is our critical security fix!
+
     def post(self, request):
         conversation_id = request.data.get("conversation_id")
         text = request.data.get("text", "")
