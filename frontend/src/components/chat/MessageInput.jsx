@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Smile,
   Paperclip,
@@ -6,31 +6,91 @@ import {
 } from "lucide-react";
 
 import { useSelector, useDispatch } from 'react-redux';
-import { chatService } from '@/services/chat.service';
 import { addMessage } from '@/store/slices/chatSlice';
+import wsService from '@/services/websocket';
 
 const MessageInput = () => {
   const [message, setMessage] = useState("");
-  const [sending, setSending] = useState(false);
   const dispatch = useDispatch();
   const { activeConversation } = useSelector((state) => state.chat);
+  const { user } = useSelector((state) => state.auth);
+  
+  const typingTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
 
-  const handleSend = async () => {
-    if (!message.trim() || !activeConversation || sending) return;
+  // Clean up typing timeout on unmount or activeConversation change
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (isTypingRef.current && activeConversation) {
+        wsService.sendTypingStop();
+        isTypingRef.current = false;
+      }
+    };
+  }, [activeConversation]);
+
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setMessage(val);
+
+    if (!activeConversation) return;
+
+    // Send typing start when user begins typing
+    if (!isTypingRef.current && val.trim().length > 0) {
+      wsService.sendTypingStart();
+      isTypingRef.current = true;
+    }
+
+    // Reset typing stop timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      if (isTypingRef.current) {
+        wsService.sendTypingStop();
+        isTypingRef.current = false;
+      }
+    }, 2000);
+  };
+
+  const handleSend = () => {
+    if (!message.trim() || !activeConversation) return;
 
     const textToSend = message.trim();
-    setMessage(""); // optimistic clear
-    setSending(true);
+    setMessage(""); // Clear input immediately
+    
+    // Stop typing indicator immediately on send
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    if (isTypingRef.current) {
+      wsService.sendTypingStop();
+      isTypingRef.current = false;
+    }
+
+    const tempId = 'pending-' + Date.now();
+
+    // Add optimistic pending message to state
+    const optimisticMessage = {
+      id: tempId,
+      conversation: activeConversation,
+      sender: { id: user?.id, username: user?.username },
+      text: textToSend,
+      is_read: false,
+      is_delivered: false,
+      created_at: new Date().toISOString(),
+      _pending: true
+    };
+    dispatch(addMessage(optimisticMessage));
 
     try {
-      const sentMessage = await chatService.sendMessage(activeConversation, textToSend);
-      // Push into redux store immediately so it shows up without waiting on WS echo
-      dispatch(addMessage(sentMessage));
+      // Send message via WS
+      wsService.sendMessage(textToSend, tempId);
     } catch (error) {
-      console.error("Failed to send message:", error);
-      setMessage(textToSend); // restore text so user doesn't lose it
-    } finally {
-      setSending(false);
+      console.error("Failed to send message via WebSocket:", error);
     }
   };
 
@@ -54,7 +114,7 @@ const MessageInput = () => {
 
         <input
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -81,7 +141,7 @@ const MessageInput = () => {
         <button
           type="button"
           onClick={handleSend}
-          disabled={!message.trim() || sending}
+          disabled={!message.trim()}
           className="
             flex
             h-11

@@ -1,64 +1,148 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
-import { MessageSquare, Users, Activity, ArrowUpRight, Plus, Search, TrendingUp, Wifi, Database, Server, UserCircle, X, Mail, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
+import { MessageSquare, Users, Activity, ArrowUpRight, Plus, Search, TrendingUp, Wifi, Database, Server, UserCircle, X, Mail, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-
-const STATS = [
-  { title: 'Total Messages', value: '24,593', change: '+12.5%', icon: MessageSquare },
-  { title: 'Total Contacts', value: '1,205', change: '+4.1%', icon: Users },
-  { title: 'Platform Uptime', value: '99.99%', change: '+0.0%', icon: Activity },
-];
-
-const RECENT_CHATS = [
-  { id: 1, name: 'Sarah Connor', message: 'Are we still on for the meeting?', time: '15m ago', unread: 2 },
-  { id: 2, name: 'John Doe', message: 'Thanks for the help earlier!', time: '2h ago', unread: 0 },
-  { id: 3, name: 'Emily Carter', message: 'Sent over the files you asked for.', time: '3h ago', unread: 1 },
-  { id: 4, name: 'Michael Lee', message: 'Sounds good, talk soon!', time: '5h ago', unread: 0 },
-];
-
-const ALL_CONTACTS = [
-  { id: 1, name: 'Sarah Connor', status: 'online' },
-  { id: 2, name: 'John Doe', status: 'offline' },
-  { id: 3, name: 'Emily Carter', status: 'online' },
-  { id: 4, name: 'Michael Lee', status: 'away' },
-  { id: 5, name: 'Priya Nair', status: 'online' },
-  { id: 6, name: 'Daniel Kim', status: 'offline' },
-];
-
-const STATUS_ITEMS = [
-  { label: 'WebSocket', status: 'Connected', icon: Wifi, variant: 'success' },
-  { label: 'Database Sync', status: 'Healthy', icon: Database, variant: 'success' },
-  { label: 'Redis Cache', status: 'Optimal', icon: Server, variant: 'success' },
-];
+import { chatService } from '@/services/chat.service';
+import api from '@/services/api';
+import wsService from '@/services/websocket';
+import { setConversations, setActiveConversation } from '@/store/slices/chatSlice';
+import NewChatModal from '@/components/chat/NewChatModal';
 
 const statusColor = {
   online: 'bg-emerald-400',
   away: 'bg-amber-400',
-  offline: 'bg-[var(--text-muted)]',
+  offline: 'bg-slate-600',
 };
+
+// Derive a badge variant from a raw status string
+function statusVariant(s) {
+  if (s === 'ok' || s === 'Connected') return 'success';
+  if (s === 'Checking…') return 'outline';
+  return 'destructive';
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // ── Live System Status ────────────────────────────────────────────────────
+  const [sysStatus, setSysStatus] = useState({
+    ws: 'Checking…',
+    db: 'Checking…',
+    redis: 'Checking…',
+  });
+
+  const refreshStatus = useCallback(async () => {
+    // WebSocket: read real readyState from the singleton
+    const wsState = wsService.socket?.readyState;
+    const wsLabel =
+      wsState === WebSocket.OPEN ? 'Connected' :
+      wsState === WebSocket.CONNECTING ? 'Connecting…' :
+      'Disconnected';
+
+    // Backend health endpoint
+    let dbLabel = 'Error';
+    let redisLabel = 'Error';
+    try {
+      const { data } = await api.get('/common/health/');
+      dbLabel = data.database === 'ok' ? 'Healthy' : 'Error';
+      redisLabel = data.redis === 'ok' ? 'Optimal' : 'Error';
+    } catch {
+      dbLabel = 'Unreachable';
+      redisLabel = 'Unreachable';
+    }
+
+    setSysStatus({ ws: wsLabel, db: dbLabel, redis: redisLabel });
+  }, []);
+
+  useEffect(() => {
+    refreshStatus();
+    const id = setInterval(refreshStatus, 30_000); // re-check every 30 s
+    return () => clearInterval(id);
+  }, [refreshStatus]);
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const { user } = useSelector((state) => state.auth);
+  const { conversations, onlineUsers } = useSelector((state) => state.chat);
+
+  // Fetch conversations on mount to hydrate dashboard
+  useEffect(() => {
+    chatService
+      .getConversations()
+      .then((data) => {
+        dispatch(setConversations(data));
+      })
+      .catch((err) => console.error('[Dashboard] Failed to fetch conversations:', err));
+  }, [dispatch]);
+
+  if (!user) return null;
+
+
+  // Process conversations for recent chats
+  const recentChats = conversations
+    .filter((c) => {
+      const other = c.participants?.find((p) => p.username !== user.username) || c.participants?.[0];
+      const name = c.is_group ? c.name : (other?.username || 'Unknown');
+      return name.toLowerCase().includes(searchQuery.toLowerCase());
+    })
+    .slice(0, 4)
+    .map((chat) => {
+      const otherParticipant = chat.participants?.find((p) => p.username !== user.username) || chat.participants?.[0];
+      const contactName = chat.is_group ? chat.name : (otherParticipant?.username || 'Unknown');
+      
+      let timeStr = '';
+      if (chat.last_message) {
+        timeStr = new Date(chat.last_message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+
+      return {
+        id: chat.id,
+        name: contactName,
+        message: chat.last_message?.text || 'No messages yet',
+        time: timeStr,
+        unread: chat.unread_count || 0,
+      };
+    });
+
+  // Extract unique contacts from conversation participants
+  const uniqueContactsMap = {};
+  conversations.forEach((chat) => {
+    chat.participants?.forEach((p) => {
+      if (p.username !== user.username && !uniqueContactsMap[p.id]) {
+        uniqueContactsMap[p.id] = {
+          id: p.id,
+          name: p.username,
+          status: onlineUsers.includes(p.id) ? 'online' : 'offline',
+        };
+      }
+    });
+  });
+
+  const allContacts = Object.values(uniqueContactsMap).filter((c) =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalUnreadMessages = conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0);
+
+  const handleSelectRecentChat = (conversationId) => {
+    dispatch(setActiveConversation(conversationId));
+    navigate('/chat');
+  };
 
   const handleQuickAction = (action) => {
     switch (action) {
       case 'Add Contact':
-        {
-          const username = window.prompt('Enter username to add as contact:');
-          if (username && username.trim()) {
-            // Hook this up to your real "add contact" API when ready
-            navigate('/chat');
-          }
-        }
-        break;
       case 'New Chat':
-        navigate('/chat');
+        setShowNewChatModal(true);
         break;
       case 'Settings':
         navigate('/settings');
@@ -69,6 +153,15 @@ const Dashboard = () => {
       default:
         break;
     }
+  };
+
+  const getAvatarUrl = () => {
+    if (user.profile?.avatar) {
+      return user.profile.avatar.startsWith('http')
+        ? user.profile.avatar
+        : `${import.meta.env.VITE_API_URL || ''}${user.profile.avatar}`;
+    }
+    return null;
   };
 
   return (
@@ -83,15 +176,21 @@ const Dashboard = () => {
           className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
         >
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[var(--text)]">Dashboard</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard</h1>
             <p className="text-sm text-[var(--text-muted)] mt-1">Welcome back — here's what's happening today.</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative w-56">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
-              <Input type="search" placeholder="Search…" className="pl-9 h-9" />
+              <Input
+                type="search"
+                placeholder="Search chats & contacts…"
+                className="pl-9 h-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
-            <Button className="gap-2 h-9" onClick={() => navigate('/chat')}>
+            <Button className="gap-2 h-9" onClick={() => setShowNewChatModal(true)}>
               <Plus className="h-4 w-4" /> New Chat
             </Button>
           </div>
@@ -100,13 +199,20 @@ const Dashboard = () => {
         {/* Upper Grid */}
         <div className="grid gap-4 lg:grid-cols-3">
 
+          {/* Recent Chats Card */}
           <motion.div className="lg:col-span-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.4 }}>
             <Card className="h-full">
               <CardHeader>
                 <div className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle>Recent Chats</CardTitle>
-                    <CardDescription className="mt-0.5">You have 3 unread messages.</CardDescription>
+                    {totalUnreadMessages > 0 ? (
+                      <CardDescription className="mt-0.5 text-emerald-400">
+                        You have {totalUnreadMessages} unread message{totalUnreadMessages === 1 ? '' : 's'}.
+                      </CardDescription>
+                    ) : (
+                      <CardDescription className="mt-0.5">All caught up!</CardDescription>
+                    )}
                   </div>
                   <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate('/chat')}>
                     View all <ArrowUpRight className="h-3 w-3" />
@@ -114,57 +220,71 @@ const Dashboard = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-1 pt-0">
-                {RECENT_CHATS.map((chat, i) => (
-                  <motion.div
-                    key={chat.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + i * 0.06 }}
-                    onClick={() => navigate('/chat')}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[var(--bg-glass-hover)] transition-all duration-150 group"
-                  >
-                    <Avatar fallback={chat.name.substring(0, 2).toUpperCase()} className="h-10 w-10 text-sm shrink-0 group-hover:ring-2 group-hover:ring-[var(--accent)] transition-all duration-200" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium text-[var(--text)] truncate">{chat.name}</span>
-                        <span className="text-[11px] text-[var(--text-muted)] shrink-0">{chat.time}</span>
+                {recentChats.length === 0 ? (
+                  <p className="text-center text-sm text-slate-500 py-10">No recent conversations.</p>
+                ) : (
+                  recentChats.map((chat, i) => (
+                    <motion.div
+                      key={chat.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 + i * 0.06 }}
+                      onClick={() => handleSelectRecentChat(chat.id)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[var(--bg-glass-hover)] transition-all duration-150 group"
+                    >
+                      <Avatar
+                        fallback={chat.name.substring(0, 2).toUpperCase()}
+                        className="h-10 w-10 text-sm shrink-0 group-hover:ring-2 group-hover:ring-emerald-500 transition-all duration-200 bg-emerald-700 font-semibold text-white"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium text-white truncate">{chat.name}</span>
+                          <span className="text-[11px] text-[var(--text-muted)] shrink-0">{chat.time}</span>
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">{chat.message}</p>
                       </div>
-                      <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">{chat.message}</p>
-                    </div>
-                    {chat.unread > 0 && (
-                      <div className="shrink-0 h-5 min-w-[20px] rounded-full bg-[var(--accent)] text-white text-[10px] font-bold flex items-center justify-center px-1.5 shadow-[0_0_10px_var(--accent-glow)]">
-                        {chat.unread}
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
+                      {chat.unread > 0 && (
+                        <div className="shrink-0 h-5 min-w-[20px] rounded-full bg-emerald-500 text-slate-950 text-[10px] font-bold flex items-center justify-center px-1.5 shadow-[0_0_10px_var(--accent-glow)]">
+                          {chat.unread}
+                        </div>
+                      )}
+                    </motion.div>
+                  ))
+                )}
               </CardContent>
             </Card>
           </motion.div>
 
+          {/* Profile Card */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}>
             <Card className="h-full">
               <CardHeader>
-                <CardTitle>Profile</CardTitle>
-                <CardDescription>Your account details</CardDescription>
+                <CardTitle>Profile Details</CardTitle>
+                <CardDescription>Your account credentials</CardDescription>
               </CardHeader>
               <CardContent className="space-y-5 pt-0">
                 <div className="flex items-center gap-3">
-                  <Avatar fallback="YO" className="h-14 w-14 text-lg" />
+                  <Avatar
+                    src={getAvatarUrl()}
+                    fallback={user.username.substring(0, 2).toUpperCase()}
+                    className="h-14 w-14 text-lg bg-emerald-700 font-bold text-white border-2 border-emerald-500"
+                  />
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[var(--text)] truncate">You</p>
-                    <p className="text-xs text-[var(--text-muted)] truncate">you@example.com</p>
+                    <p className="text-sm font-semibold text-white truncate">
+                      {[user.first_name, user.last_name].filter(Boolean).join(' ') || user.username}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)] truncate">@{user.username}</p>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-[var(--border)] space-y-2.5">
+                <div className="pt-4 border-t border-slate-800 space-y-2.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-[var(--text-muted)]">Status</span>
+                    <span className="text-[var(--text-muted)]">Presence</span>
                     <Badge variant="success">Online</Badge>
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-[var(--text-muted)]">Contacts</span>
-                    <span className="text-[var(--text)] font-medium">1,205</span>
+                    <span className="text-white font-medium">{allContacts.length}</span>
                   </div>
                 </div>
 
@@ -180,13 +300,14 @@ const Dashboard = () => {
         {/* Lower Grid */}
         <div className="grid gap-4 lg:grid-cols-3">
 
+          {/* All Contacts Card */}
           <motion.div className="lg:col-span-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.4 }}>
             <Card className="h-full">
               <CardHeader>
                 <div className="flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle>All Contacts</CardTitle>
-                    <CardDescription className="mt-0.5">Everyone you can chat with.</CardDescription>
+                    <CardTitle>Your Contacts</CardTitle>
+                    <CardDescription className="mt-0.5">Active messaging connections</CardDescription>
                   </div>
                   <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate('/chat')}>
                     View all <ArrowUpRight className="h-3 w-3" />
@@ -194,49 +315,99 @@ const Dashboard = () => {
                 </div>
               </CardHeader>
               <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-0">
-                {ALL_CONTACTS.map((contact, i) => (
-                  <motion.div
-                    key={contact.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 + i * 0.05 }}
-                    onClick={() => navigate('/chat')}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[var(--bg-glass-hover)] transition-all duration-150 group"
-                  >
-                    <div className="relative shrink-0">
-                      <Avatar fallback={contact.name.substring(0, 2).toUpperCase()} className="h-9 w-9 text-xs group-hover:ring-2 group-hover:ring-[var(--accent)] transition-all duration-200" />
-                      <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-[var(--bg-surface)] ${statusColor[contact.status]}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-[var(--text)] truncate block">{contact.name}</span>
-                      <span className="text-[11px] text-[var(--text-muted)] capitalize">{contact.status}</span>
-                    </div>
-                  </motion.div>
-                ))}
+                {allContacts.length === 0 ? (
+                  <p className="text-center text-sm text-slate-500 py-10 sm:col-span-2">No contacts found.</p>
+                ) : (
+                  allContacts.map((contact, i) => (
+                    <motion.div
+                      key={contact.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 + i * 0.05 }}
+                      onClick={() => {
+                        // Open chat with contact
+                        const chat = conversations.find((c) =>
+                          !c.is_group && c.participants?.some((p) => p.id === contact.id)
+                        );
+                        if (chat) handleSelectRecentChat(chat.id);
+                        else navigate('/chat');
+                      }}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[var(--bg-glass-hover)] transition-all duration-150 group"
+                    >
+                      <div className="relative shrink-0">
+                        <Avatar
+                          fallback={contact.name.substring(0, 2).toUpperCase()}
+                          className="h-9 w-9 text-xs group-hover:ring-2 group-hover:ring-emerald-500 transition-all duration-200 bg-emerald-700 font-semibold text-white"
+                        />
+                        <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-slate-900 ${statusColor[contact.status]}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium text-white truncate block">{contact.name}</span>
+                        <span className="text-[11px] text-[var(--text-muted)] capitalize">{contact.status}</span>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
               </CardContent>
             </Card>
           </motion.div>
 
+          {/* System Status Card */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.4 }}>
             <Card className="h-full">
               <CardHeader>
-                <CardTitle>System Status</CardTitle>
-                <CardDescription>Real-time platform metrics</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>System Status</CardTitle>
+                    <CardDescription>Real-time platform metrics</CardDescription>
+                  </div>
+                  <button
+                    onClick={refreshStatus}
+                    title="Refresh status"
+                    className="text-[var(--text-muted)] hover:text-emerald-400 transition-colors"
+                  >
+                    <Activity className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-5 pt-0">
-                <div className="space-y-2.5">
-                  {STATUS_ITEMS.map(({ label, status, icon: Icon, variant }) => (
-                    <div key={label} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-                        <Icon className="h-3.5 w-3.5" />
-                        {label}
+                <div className="space-y-3">
+                  {[
+                    { label: 'WebSocket', value: sysStatus.ws, icon: Wifi },
+                    { label: 'Database', value: sysStatus.db, icon: Database },
+                    { label: 'Redis Pub/Sub', value: sysStatus.redis, icon: Server },
+                  ].map(({ label, value, icon: Icon }) => {
+                    const isOk = value === 'Connected' || value === 'Healthy' || value === 'Optimal';
+                    const isChecking = value === 'Checking…';
+                    return (
+                      <div key={label} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+                          <Icon className="h-3.5 w-3.5" />
+                          {label}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {isOk && (
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                            </span>
+                          )}
+                          {isChecking && (
+                            <span className="h-2 w-2 rounded-full bg-slate-500 animate-pulse" />
+                          )}
+                          {!isOk && !isChecking && (
+                            <span className="h-2 w-2 rounded-full bg-red-500" />
+                          )}
+                          <Badge variant={statusVariant(value)} className="text-[10px] py-0 px-1.5">
+                            {value}
+                          </Badge>
+                        </div>
                       </div>
-                      <Badge variant={variant}>{status}</Badge>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
-                <div className="pt-4 border-t border-[var(--border)]">
+                <div className="pt-4 border-t border-slate-800">
                   <h4 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">Quick Actions</h4>
                   <div className="grid grid-cols-2 gap-2">
                     {['Add Contact', 'New Chat', 'Settings', 'Support'].map((action) => (
@@ -252,24 +423,28 @@ const Dashboard = () => {
 
         </div>
 
-        {/* Stats */}
+        {/* Stats Section */}
         <div className="grid gap-4 sm:grid-cols-3 pb-8">
-          {STATS.map((stat, i) => (
+          {[
+            { title: 'Total Conversations', value: conversations.length, icon: MessageSquare, label: 'chats' },
+            { title: 'Total Contacts', value: allContacts.length, icon: Users, label: 'connections' },
+            { title: 'Online Presence', value: onlineUsers.length, icon: Activity, label: 'active now' },
+          ].map((stat, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 + i * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-              <Card className="hover:border-[var(--border-active)] transition-all duration-200">
+              <Card className="hover:border-slate-700 transition-all duration-200 bg-slate-900/60">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">{stat.title}</p>
-                      <p className="text-3xl font-bold text-[var(--text)] tracking-tight">{stat.value}</p>
+                      <p className="text-3xl font-bold text-white tracking-tight">{stat.value}</p>
                       <div className="flex items-center gap-1 mt-2">
                         <TrendingUp className="h-3 w-3 text-emerald-500" />
-                        <span className="text-xs font-semibold text-emerald-500">{stat.change}</span>
-                        <span className="text-xs text-[var(--text-muted)]">from last month</span>
+                        <span className="text-xs font-semibold text-emerald-500">Live</span>
+                        <span className="text-xs text-[var(--text-muted)]">{stat.label} on platform</span>
                       </div>
                     </div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)] shrink-0">
-                      <stat.icon className="h-5 w-5 text-white" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600/10 text-emerald-400 shrink-0">
+                      <stat.icon className="h-5 w-5" />
                     </div>
                   </div>
                 </CardContent>
@@ -296,34 +471,34 @@ const Dashboard = () => {
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.15 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-sm shadow-2xl relative"
+              className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl relative"
             >
               <button
                 onClick={() => setShowSupportModal(false)}
-                className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
+                className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-white transition-colors"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
               </button>
 
-              <h3 className="text-lg font-semibold text-[var(--text)] mb-1">Need Help?</h3>
+              <h3 className="text-lg font-semibold text-white mb-1">Need Help?</h3>
               <p className="text-sm text-[var(--text-muted)] mb-5">
                 Our support team is here for you 24/7. Reach out anytime.
               </p>
 
               <div className="space-y-3 text-sm mb-5">
-                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-[var(--bg-glass-hover)]">
-                  <Mail className="h-4 w-4 text-[var(--accent)] shrink-0" />
+                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-800/40">
+                  <Mail className="h-4 w-4 text-emerald-400 shrink-0" />
                   <div className="min-w-0">
                     <p className="text-[11px] text-[var(--text-muted)]">Email</p>
-                    <p className="text-[var(--text)] font-medium truncate">support@example.com</p>
+                    <p className="text-white font-medium truncate">support@example.com</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-[var(--bg-glass-hover)]">
-                  <Clock className="h-4 w-4 text-[var(--accent)] shrink-0" />
+                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-800/40">
+                  <Clock className="h-4 w-4 text-emerald-400 shrink-0" />
                   <div className="min-w-0">
                     <p className="text-[11px] text-[var(--text-muted)]">Avg. Response Time</p>
-                    <p className="text-[var(--text)] font-medium">~2 hours</p>
+                    <p className="text-white font-medium">~2 hours</p>
                   </div>
                 </div>
               </div>
@@ -331,7 +506,7 @@ const Dashboard = () => {
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white border-none"
                   onClick={() => (window.location.href = 'mailto:support@example.com')}
                 >
                   Email Us
@@ -349,6 +524,11 @@ const Dashboard = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* New Chat Modal */}
+      {showNewChatModal && (
+        <NewChatModal onClose={() => setShowNewChatModal(false)} />
+      )}
     </div>
   );
 };

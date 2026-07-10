@@ -3,7 +3,11 @@ from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import get_user_model
+from django.db.models import Q
 from .serializers import SignupSerializer, UserSerializer, ProfileSerializer
+
+User = get_user_model()
 
 class SignupView(generics.CreateAPIView):
     permission_classes = [AllowAny]
@@ -34,3 +38,23 @@ class UpdateProfileDetailsView(generics.UpdateAPIView):
 
     def get_object(self):
         return self.request.user.profile
+
+
+class UserSearchView(APIView):
+    """Search users by username. Used by the New Chat modal."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        query = request.query_params.get('q', '').strip()
+        if not query or len(query) < 1:
+            return Response([])
+
+        users = (
+            User.objects
+            .filter(Q(username__icontains=query))
+            .exclude(id=request.user.id)
+            .select_related('profile')
+            [:20]
+        )
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)

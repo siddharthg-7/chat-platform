@@ -14,7 +14,6 @@ import { Avatar } from '@/components/ui/Avatar';
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: 'Dashboard', to: '/' },
   { icon: MessageSquare,   label: 'Chat',      to: '/chat' },
-  { icon: Users,           label: 'Contacts',  to: '/contacts' },
   { icon: Settings,        label: 'Settings',  to: '/settings' },
 ];
 
