@@ -9,6 +9,7 @@ class AccountsAPITest(APITestCase):
         self.login_url = reverse('token_obtain_pair')
         self.logout_url = reverse("logout")
         self.change_password_url = reverse("change_password")
+        self.forgot_password_url = reverse("forgot_password")
         self.profile_url = reverse('profile')
         self.user_data = {
             'username': 'testuser',
@@ -214,3 +215,51 @@ class AccountsAPITest(APITestCase):
     )
 
         self.assertEqual(response.status_code, 401)
+
+    def test_forgot_password_existing_email(self):
+    # Create user
+        self.client.post(self.signup_url, self.user_data)
+
+        response = self.client.post(self.forgot_password_url,
+        {
+            "email": "test@example.com",
+        },
+        content_type="application/json",
+    )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["message"],
+        "If an account exists, a password reset email has been sent.",)
+
+    def test_forgot_password_non_existing_email(self):
+        response = self.client.post(self.forgot_password_url,
+        {
+            "email": "unknown@example.com",
+        },
+        content_type="application/json",
+    )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["message"],
+        "If an account exists, a password reset email has been sent.",)
+
+    def test_forgot_password_invalid_email(self):
+        response = self.client.post(self.forgot_password_url,
+        {
+            "email": "not-an-email",
+        },
+        content_type="application/json",
+    )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("email", response.data)
+
+    def test_forgot_password_missing_email(self):
+        response = self.client.post(
+        self.forgot_password_url,
+        {},
+        content_type="application/json",
+    )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("email", response.data)
