@@ -31,5 +31,20 @@ export const authService = {
   getProfile: async () => {
     const response = await api.get('/accounts/profile/');
     return response.data;
+  },
+
+  updateProfile: async (data) => {
+    const response = await api.patch('/accounts/profile/', data);
+    return response.data;
+  },
+
+  updateProfileDetails: async (formData) => {
+    const response = await api.patch('/accounts/profile/update/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
   }
 };
+

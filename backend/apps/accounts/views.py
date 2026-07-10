@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -14,7 +14,10 @@ from django.utils.http import urlsafe_base64_encode
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 from django.conf import settings
+from django.db.models import Q
 from .serializers import (SignupSerializer, UserSerializer, ProfileSerializer, ChangePasswordSerializer,ForgotPasswordSerializer,ResetPasswordSerializer,)
+
+User = get_user_model()
 
 class SignupView(generics.CreateAPIView):
     permission_classes = [AllowAny]
@@ -244,3 +247,21 @@ class ResetPasswordView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+class UserSearchView(APIView):
+    """Search users by username. Used by the New Chat modal."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        query = request.query_params.get('q', '').strip()
+        if not query or len(query) < 1:
+            return Response([])
+
+        users = (
+            User.objects
+            .filter(Q(username__icontains=query))
+            .exclude(id=request.user.id)
+            .select_related('profile')
+            [:20]
+        )
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)

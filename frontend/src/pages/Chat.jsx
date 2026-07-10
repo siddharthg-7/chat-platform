@@ -4,7 +4,6 @@ import { chatService } from '../services/chat.service';
 import wsService from '../services/websocket';
 import { setConversations, setMessages, setActiveConversation } from '../store/slices/chatSlice';
 
-import Sidebar from "@/components/chat/Sidebar";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatArea from "@/components/chat/ChatArea";
 
@@ -75,9 +74,7 @@ const Chat = () => {
   }, [isDragging]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-950">
-      <Sidebar />
-
+    <div className="flex-1 flex overflow-hidden bg-slate-950">
       <div ref={containerRef} className="flex flex-1 overflow-hidden h-full">
         <div style={{ width: `${chatListWidth}px` }} className="shrink-0 h-full">
           <ChatSidebar />
