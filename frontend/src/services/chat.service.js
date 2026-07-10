@@ -31,5 +31,11 @@ export const chatService = {
       }
     });
     return response.data;
-  }
+  },
+
+  searchUsers: async (query) => {
+    const response = await api.get('/accounts/users/search/', { params: { q: query } });
+    return response.data;
+  },
 };
+

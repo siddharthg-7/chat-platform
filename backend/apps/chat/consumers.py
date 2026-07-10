@@ -56,10 +56,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # Receive message from WebSocket
     async def receive(self, text_data):
+        import time
+        
+        if not hasattr(self, 'message_timestamps'):
+            self.message_timestamps = []
+            
         data = json.loads(text_data)
         action = data.get('action')
 
         if action == 'send_message':
+            # Throttling: 30 messages per minute
+            now = time.time()
+            self.message_timestamps = [t for t in self.message_timestamps if now - t < 60]
+            
+            if len(self.message_timestamps) >= 30:
+                await self.send(text_data=json.dumps({
+                    'action': 'error',
+                    'message': 'Rate limit exceeded. Please wait before sending more messages.'
+                }))
+                return
+                
+            self.message_timestamps.append(now)
             message_text = data.get('text')
             temp_id = data.get('temp_id')
             if message_text:
@@ -106,6 +123,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'reader_id': self.user.id
                 }
             )
+        elif action == 'ping':
+            await self.send(text_data=json.dumps({'action': 'pong'}))
 
     # Receive message from room group
     async def chat_message(self, event):
@@ -178,8 +197,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def set_online_status(self, status):
         try:
+            from django.utils import timezone
             profile = self.user.profile
             profile.is_online = status
+            if not status:
+                profile.last_seen = timezone.now()
             profile.save()
         except Exception:
             pass
