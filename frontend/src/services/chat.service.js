@@ -3,7 +3,7 @@ import api from './api';
 export const chatService = {
   getConversations: async () => {
     const response = await api.get('/chat/conversations/');
-    return response.data.results || response.data;
+    return response.data.results ?? response.data;
   },
 
   createConversation: async (userId) => {
