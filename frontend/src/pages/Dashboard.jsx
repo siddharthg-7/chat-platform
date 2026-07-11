@@ -15,12 +15,11 @@ import { setConversations, setActiveConversation } from '@/store/slices/chatSlic
 import NewChatModal from '@/components/chat/NewChatModal';
 
 const statusColor = {
-  online: 'bg-emerald-400',
+  online: 'bg-accent',
   away: 'bg-amber-400',
-  offline: 'bg-slate-600',
+  offline: 'bg-muted-foreground',
 };
 
-// Derive a badge variant from a raw status string
 function statusVariant(s) {
   if (s === 'ok' || s === 'Connected') return 'success';
   if (s === 'Checking…') return 'outline';
@@ -34,7 +33,6 @@ const Dashboard = () => {
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // ── Live System Status ────────────────────────────────────────────────────
   const [sysStatus, setSysStatus] = useState({
     ws: 'Checking…',
     db: 'Checking…',
@@ -42,14 +40,12 @@ const Dashboard = () => {
   });
 
   const refreshStatus = useCallback(async () => {
-    // WebSocket: read real readyState from the singleton
     const wsState = wsService.socket?.readyState;
     const wsLabel =
       wsState === WebSocket.OPEN ? 'Connected' :
       wsState === WebSocket.CONNECTING ? 'Connecting…' :
       'Disconnected';
 
-    // Backend health endpoint
     let dbLabel = 'Error';
     let redisLabel = 'Error';
     try {
@@ -66,15 +62,13 @@ const Dashboard = () => {
 
   useEffect(() => {
     refreshStatus();
-    const id = setInterval(refreshStatus, 30_000); // re-check every 30 s
+    const id = setInterval(refreshStatus, 30000);
     return () => clearInterval(id);
   }, [refreshStatus]);
-  // ─────────────────────────────────────────────────────────────────────────
 
   const { user } = useSelector((state) => state.auth);
   const { conversations, onlineUsers } = useSelector((state) => state.chat);
 
-  // Fetch conversations on mount to hydrate dashboard
   useEffect(() => {
     chatService
       .getConversations()
@@ -86,8 +80,6 @@ const Dashboard = () => {
 
   if (!user) return null;
 
-
-  // Process conversations for recent chats
   const recentChats = conversations
     .filter((c) => {
       const other = c.participants?.find((p) => p.username !== user.username) || c.participants?.[0];
@@ -98,12 +90,10 @@ const Dashboard = () => {
     .map((chat) => {
       const otherParticipant = chat.participants?.find((p) => p.username !== user.username) || chat.participants?.[0];
       const contactName = chat.is_group ? chat.name : (otherParticipant?.username || 'Unknown');
-      
       let timeStr = '';
       if (chat.last_message) {
         timeStr = new Date(chat.last_message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       }
-
       return {
         id: chat.id,
         name: contactName,
@@ -113,7 +103,6 @@ const Dashboard = () => {
       };
     });
 
-  // Extract unique contacts from conversation participants
   const uniqueContactsMap = {};
   conversations.forEach((chat) => {
     chat.participants?.forEach((p) => {
@@ -165,7 +154,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-surface)]">
+    <div className="flex-1 overflow-y-auto custom-scrollbar bg-surface">
       <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-7">
 
         {/* Header */}
@@ -176,12 +165,12 @@ const Dashboard = () => {
           className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
         >
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard</h1>
-            <p className="text-sm text-[var(--text-muted)] mt-1">Welcome back — here's what's happening today.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
+            <p className="text-sm text-muted-foreground mt-1">Welcome back — here's what's happening today.</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative w-56">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search chats & contacts…"
@@ -207,7 +196,7 @@ const Dashboard = () => {
                   <div>
                     <CardTitle>Recent Chats</CardTitle>
                     {totalUnreadMessages > 0 ? (
-                      <CardDescription className="mt-0.5 text-emerald-400">
+                      <CardDescription className="mt-0.5 text-accent">
                         You have {totalUnreadMessages} unread message{totalUnreadMessages === 1 ? '' : 's'}.
                       </CardDescription>
                     ) : (
@@ -221,7 +210,7 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent className="space-y-1 pt-0">
                 {recentChats.length === 0 ? (
-                  <p className="text-center text-sm text-slate-500 py-10">No recent conversations.</p>
+                  <p className="text-center text-sm text-muted-foreground py-10">No recent conversations.</p>
                 ) : (
                   recentChats.map((chat, i) => (
                     <motion.div
@@ -230,21 +219,21 @@ const Dashboard = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.3 + i * 0.06 }}
                       onClick={() => handleSelectRecentChat(chat.id)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[var(--bg-glass-hover)] transition-all duration-150 group"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-glass-hover transition-all duration-150 group"
                     >
                       <Avatar
                         fallback={chat.name.substring(0, 2).toUpperCase()}
-                        className="h-10 w-10 text-sm shrink-0 group-hover:ring-2 group-hover:ring-emerald-500 transition-all duration-200 bg-emerald-700 font-semibold text-white"
+                        className="h-10 w-10 text-sm shrink-0 group-hover:ring-2 group-hover:ring-accent transition-all duration-200 bg-accent font-semibold text-white"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-medium text-white truncate">{chat.name}</span>
-                          <span className="text-[11px] text-[var(--text-muted)] shrink-0">{chat.time}</span>
+                          <span className="text-sm font-medium text-foreground truncate">{chat.name}</span>
+                          <span className="text-[11px] text-muted-foreground shrink-0">{chat.time}</span>
                         </div>
-                        <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">{chat.message}</p>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{chat.message}</p>
                       </div>
                       {chat.unread > 0 && (
-                        <div className="shrink-0 h-5 min-w-[20px] rounded-full bg-emerald-500 text-slate-950 text-[10px] font-bold flex items-center justify-center px-1.5 shadow-[0_0_10px_var(--accent-glow)]">
+                        <div className="shrink-0 h-5 min-w-[20px] rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center px-1.5 shadow-glow-sm">
                           {chat.unread}
                         </div>
                       )}
@@ -267,24 +256,24 @@ const Dashboard = () => {
                   <Avatar
                     src={getAvatarUrl()}
                     fallback={user.username.substring(0, 2).toUpperCase()}
-                    className="h-14 w-14 text-lg bg-emerald-700 font-bold text-white border-2 border-emerald-500"
+                    className="h-14 w-14 text-lg bg-accent font-bold text-white border-2 border-accent"
                   />
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">
+                    <p className="text-sm font-semibold text-foreground truncate">
                       {[user.first_name, user.last_name].filter(Boolean).join(' ') || user.username}
                     </p>
-                    <p className="text-xs text-[var(--text-muted)] truncate">@{user.username}</p>
+                    <p className="text-xs text-muted-foreground truncate">@{user.username}</p>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-800 space-y-2.5">
+                <div className="pt-4 border-t border-border space-y-2.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-[var(--text-muted)]">Presence</span>
+                    <span className="text-muted-foreground">Presence</span>
                     <Badge variant="success">Online</Badge>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-[var(--text-muted)]">Contacts</span>
-                    <span className="text-white font-medium">{allContacts.length}</span>
+                    <span className="text-muted-foreground">Contacts</span>
+                    <span className="text-foreground font-medium">{allContacts.length}</span>
                   </div>
                 </div>
 
@@ -316,7 +305,7 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-0">
                 {allContacts.length === 0 ? (
-                  <p className="text-center text-sm text-slate-500 py-10 sm:col-span-2">No contacts found.</p>
+                  <p className="text-center text-sm text-muted-foreground py-10 sm:col-span-2">No contacts found.</p>
                 ) : (
                   allContacts.map((contact, i) => (
                     <motion.div
@@ -325,25 +314,24 @@ const Dashboard = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.4 + i * 0.05 }}
                       onClick={() => {
-                        // Open chat with contact
                         const chat = conversations.find((c) =>
                           !c.is_group && c.participants?.some((p) => p.id === contact.id)
                         );
                         if (chat) handleSelectRecentChat(chat.id);
                         else navigate('/chat');
                       }}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[var(--bg-glass-hover)] transition-all duration-150 group"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-glass-hover transition-all duration-150 group"
                     >
                       <div className="relative shrink-0">
                         <Avatar
                           fallback={contact.name.substring(0, 2).toUpperCase()}
-                          className="h-9 w-9 text-xs group-hover:ring-2 group-hover:ring-emerald-500 transition-all duration-200 bg-emerald-700 font-semibold text-white"
+                          className="h-9 w-9 text-xs group-hover:ring-2 group-hover:ring-accent transition-all duration-200 bg-accent font-semibold text-white"
                         />
-                        <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-slate-900 ${statusColor[contact.status]}`} />
+                        <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-surface ${statusColor[contact.status]}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium text-white truncate block">{contact.name}</span>
-                        <span className="text-[11px] text-[var(--text-muted)] capitalize">{contact.status}</span>
+                        <span className="text-sm font-medium text-foreground truncate block">{contact.name}</span>
+                        <span className="text-[11px] text-muted-foreground capitalize">{contact.status}</span>
                       </div>
                     </motion.div>
                   ))
@@ -364,7 +352,7 @@ const Dashboard = () => {
                   <button
                     onClick={refreshStatus}
                     title="Refresh status"
-                    className="text-[var(--text-muted)] hover:text-emerald-400 transition-colors"
+                    className="text-muted-foreground hover:text-accent transition-colors"
                   >
                     <Activity className="h-3.5 w-3.5" />
                   </button>
@@ -381,22 +369,22 @@ const Dashboard = () => {
                     const isChecking = value === 'Checking…';
                     return (
                       <div key={label} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Icon className="h-3.5 w-3.5" />
                           {label}
                         </div>
                         <div className="flex items-center gap-1.5">
                           {isOk && (
                             <span className="relative flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
                             </span>
                           )}
                           {isChecking && (
-                            <span className="h-2 w-2 rounded-full bg-slate-500 animate-pulse" />
+                            <span className="h-2 w-2 rounded-full bg-muted-foreground animate-pulse" />
                           )}
                           {!isOk && !isChecking && (
-                            <span className="h-2 w-2 rounded-full bg-red-500" />
+                            <span className="h-2 w-2 rounded-full bg-rose-500" />
                           )}
                           <Badge variant={statusVariant(value)} className="text-[10px] py-0 px-1.5">
                             {value}
@@ -407,8 +395,8 @@ const Dashboard = () => {
                   })}
                 </div>
 
-                <div className="pt-4 border-t border-slate-800">
-                  <h4 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">Quick Actions</h4>
+                <div className="pt-4 border-t border-border">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</h4>
                   <div className="grid grid-cols-2 gap-2">
                     {['Add Contact', 'New Chat', 'Settings', 'Support'].map((action) => (
                       <Button key={action} variant="outline" size="sm" className="w-full text-xs" onClick={() => handleQuickAction(action)}>
@@ -431,19 +419,19 @@ const Dashboard = () => {
             { title: 'Online Presence', value: onlineUsers.length, icon: Activity, label: 'active now' },
           ].map((stat, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 + i * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-              <Card className="hover:border-slate-700 transition-all duration-200 bg-slate-900/60">
+              <Card className="hover:border-border transition-all duration-200 bg-panel">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">{stat.title}</p>
-                      <p className="text-3xl font-bold text-white tracking-tight">{stat.value}</p>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">{stat.title}</p>
+                      <p className="text-3xl font-bold text-foreground tracking-tight">{stat.value}</p>
                       <div className="flex items-center gap-1 mt-2">
-                        <TrendingUp className="h-3 w-3 text-emerald-500" />
-                        <span className="text-xs font-semibold text-emerald-500">Live</span>
-                        <span className="text-xs text-[var(--text-muted)]">{stat.label} on platform</span>
+                        <TrendingUp className="h-3 w-3 text-accent" />
+                        <span className="text-xs font-semibold text-accent">Live</span>
+                        <span className="text-xs text-muted-foreground">{stat.label} on platform</span>
                       </div>
                     </div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600/10 text-emerald-400 shrink-0">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent shrink-0">
                       <stat.icon className="h-5 w-5" />
                     </div>
                   </div>
@@ -471,34 +459,34 @@ const Dashboard = () => {
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.15 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl relative"
+              className="bg-panel border border-border rounded-2xl p-6 w-full max-w-sm shadow-2xl relative"
             >
               <button
                 onClick={() => setShowSupportModal(false)}
-                className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-white transition-colors"
+                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
               </button>
 
-              <h3 className="text-lg font-semibold text-white mb-1">Need Help?</h3>
-              <p className="text-sm text-[var(--text-muted)] mb-5">
+              <h3 className="text-lg font-semibold text-foreground mb-1">Need Help?</h3>
+              <p className="text-sm text-muted-foreground mb-5">
                 Our support team is here for you 24/7. Reach out anytime.
               </p>
 
               <div className="space-y-3 text-sm mb-5">
-                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-800/40">
-                  <Mail className="h-4 w-4 text-emerald-400 shrink-0" />
+                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-glass">
+                  <Mail className="h-4 w-4 text-accent shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-[11px] text-[var(--text-muted)]">Email</p>
-                    <p className="text-white font-medium truncate">support@example.com</p>
+                    <p className="text-[11px] text-muted-foreground">Email</p>
+                    <p className="text-foreground font-medium truncate">support@example.com</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-800/40">
-                  <Clock className="h-4 w-4 text-emerald-400 shrink-0" />
+                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-glass">
+                  <Clock className="h-4 w-4 text-accent shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-[11px] text-[var(--text-muted)]">Avg. Response Time</p>
-                    <p className="text-white font-medium">~2 hours</p>
+                    <p className="text-[11px] text-muted-foreground">Avg. Response Time</p>
+                    <p className="text-foreground font-medium">~2 hours</p>
                   </div>
                 </div>
               </div>
@@ -506,7 +494,7 @@ const Dashboard = () => {
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white border-none"
+                  className="flex-1 bg-accent hover:bg-accent-hover text-white border-none"
                   onClick={() => (window.location.href = 'mailto:support@example.com')}
                 >
                   Email Us

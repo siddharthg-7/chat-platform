@@ -6,10 +6,11 @@ import NewChatModal from "./NewChatModal";
 import { useSelector, useDispatch } from 'react-redux';
 import { setActiveConversation, setConversations } from '@/store/slices/chatSlice';
 import { chatService } from '@/services/chat.service';
+import { Input } from '@/components/ui/Input';
 
 const ChatSidebar = () => {
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all"); // all | groups | unread
+  const [filter, setFilter] = useState("all");
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const dispatch = useDispatch();
 
@@ -58,8 +59,8 @@ const ChatSidebar = () => {
       onClick={() => setFilter(key)}
       className={`rounded-full px-4 py-1 text-xs font-medium transition ${
         filter === key
-          ? "bg-emerald-500 text-white"
-          : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+          ? "bg-accent text-white"
+          : "bg-glass text-muted-foreground hover:bg-glass-hover"
       }`}
     >
       {label}
@@ -68,69 +69,62 @@ const ChatSidebar = () => {
 
   return (
     <>
-      <aside className="flex h-full flex-col bg-slate-900">
+      <aside className="flex h-full flex-col bg-panel">
+        <div className="border-b border-border px-6 py-5">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-foreground">Chats</h1>
+            <button
+              onClick={handleNewChat}
+              className="rounded-xl p-2 text-muted-foreground transition hover:bg-glass hover:text-foreground"
+            >
+              <Plus size={18} />
+            </button>
+          </div>
 
-      <div className="border-b border-slate-800 px-6 py-5">
+          <div className="relative mt-5">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search conversations..."
+              className="pl-11"
+            />
+          </div>
 
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white">Chats</h1>
-
-          <button
-            onClick={handleNewChat}
-            className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
-          >
-            <Plus size={18} />
-          </button>
+          <div className="mt-5 flex gap-2">
+            {filterBtn("all", "All")}
+            {filterBtn("groups", "Groups")}
+            {filterBtn("unread", "Unread")}
+          </div>
         </div>
 
-        <div className="relative mt-5">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search conversations..."
-            className="w-full rounded-xl border border-slate-700 bg-slate-800 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-emerald-500"
-          />
-        </div>
+        <div className="flex-1 overflow-y-auto px-4 py-5 custom-scrollbar">
+          {pinnedChats.length > 0 && (
+            <>
+              <h3 className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pinned</h3>
+              {pinnedChats.map((chat) => (
+                <ChatListItem key={chat.id} contact={chat} isActive={activeConversation === chat.id} onClick={() => handleSelectChat(chat)} />
+              ))}
+            </>
+          )}
 
-        <div className="mt-5 flex gap-2">
-          {filterBtn("all", "All")}
-          {filterBtn("groups", "Groups")}
-          {filterBtn("unread", "Unread")}
-        </div>
+          <h3 className="mb-3 mt-6 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent</h3>
 
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-4 py-5">
-
-        {pinnedChats.length > 0 && (
-          <>
-            <h3 className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Pinned</h3>
-            {pinnedChats.map((chat) => (
+          {recentChats.length === 0 ? (
+            <p className="px-2 text-sm text-muted-foreground">No conversations found.</p>
+          ) : (
+            recentChats.map((chat) => (
               <ChatListItem key={chat.id} contact={chat} isActive={activeConversation === chat.id} onClick={() => handleSelectChat(chat)} />
-            ))}
-          </>
-        )}
+            ))
+          )}
+        </div>
+      </aside>
 
-        <h3 className="mb-3 mt-6 px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Recent</h3>
-
-        {recentChats.length === 0 ? (
-          <p className="px-2 text-sm text-slate-500">No conversations found.</p>
-        ) : (
-          recentChats.map((chat) => (
-            <ChatListItem key={chat.id} contact={chat} isActive={activeConversation === chat.id} onClick={() => handleSelectChat(chat)} />
-          ))
-        )}
-
-      </div>
-
-    </aside>
-
-    {/* New Chat Modal — rendered outside the aside so it's fullscreen */}
-    {showNewChatModal && (
-      <NewChatModal onClose={() => setShowNewChatModal(false)} />
-    )}
-  </>);
+      {showNewChatModal && (
+        <NewChatModal onClose={() => setShowNewChatModal(false)} />
+      )}
+    </>
+  );
 };
 
 export default ChatSidebar;
