@@ -20,7 +20,7 @@ export function ThemeProvider({ children }) {
     } else {
       document.documentElement.classList.remove("dark");
     }
-    localStorage.setItem("theme", theme);
+    if (localStorage.getItem("theme")) localStorage.setItem("theme", theme);
   }, [theme]);
 
   useEffect(() => {
