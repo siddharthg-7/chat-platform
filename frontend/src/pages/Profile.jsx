@@ -9,7 +9,7 @@ import Loader from '@/components/ui/Loader';
 import { Camera, Mail, Calendar, AlertCircle, CheckCircle, Loader2, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { authService } from '../services/auth.service';
-import { updateProfile } from '../store/slices/authSlice';
+import { logout, updateProfile } from '../store/slices/authSlice';
 
 const DEFAULT_COVER_GRADIENT = 'linear-gradient(to bottom right, #10b981, #047857, #064e3b)';
 
