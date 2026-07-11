@@ -25,11 +25,27 @@ class JWTAuthMiddleware(BaseMiddleware):
         if auth_header.startswith('Bearer '):
             token = auth_header.split(' ')[1]
         
-        # Fallback to query string for development (Browser WebSocket API limitation)
+        # Read from query string
         if not token:
             query_string = scope.get('query_string', b'').decode()
-            query_params = parse_qs(query_string)
-            token = query_params.get('token', [None])[0]
+            if query_string:
+                parsed_qs = parse_qs(query_string)
+                if 'token' in parsed_qs:
+                    token = parsed_qs['token'][0]
+
+        # Read from Sec-WebSocket-Protocol (Browser WebSocket API workaround)
+        if not token:
+            # Check scope['subprotocols'] which is populated by ASGI servers
+            subprotocols = scope.get('subprotocols', [])
+            if len(subprotocols) >= 2 and subprotocols[0] == 'access_token':
+                token = subprotocols[1]
+            else:
+                # Fallback to headers just in case
+                sec_protocol = headers.get(b'sec-websocket-protocol', b'').decode()
+                if sec_protocol:
+                    protocols = [p.strip() for p in sec_protocol.split(',')]
+                    if len(protocols) >= 2 and protocols[0] == 'access_token':
+                        token = protocols[1]
 
         if token:
             try:
@@ -38,7 +54,8 @@ class JWTAuthMiddleware(BaseMiddleware):
                 validated_token = AccessToken(token)
                 user_id = validated_token['user_id']
                 scope['user'] = await get_user(user_id)
-            except Exception:
+            except Exception as e:
+                print("JWT Error:", e)
                 scope['user'] = AnonymousUser()
         else:
             scope['user'] = AnonymousUser()

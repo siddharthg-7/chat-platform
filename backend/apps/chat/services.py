@@ -1,7 +1,8 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.db.models import Count
-from .models import Conversation, Message
+from .models import Conversation, Message, Attachment
 
+User = get_user_model()
 
 def create_conversation(user1, user2_id):
     if not user2_id:
@@ -13,7 +14,7 @@ def create_conversation(user1, user2_id):
         return None, "User not found"
 
     # Check for an existing 1-on-1 conversation between these two users
-    existing = (
+    existing_conv = (
         Conversation.objects
         .filter(participants=user1)
         .filter(participants=user2)
@@ -21,8 +22,8 @@ def create_conversation(user1, user2_id):
         .filter(cnt=2)
         .first()
     )
-    if existing:
-        return existing, None
+    if existing_conv:
+        return existing_conv, "exists"
 
     conversation = Conversation.objects.create()
     conversation.participants.add(user1, user2)
@@ -32,5 +33,27 @@ def create_conversation(user1, user2_id):
 
 def get_messages(conversation_id):
     return Message.objects.filter(conversation_id=conversation_id)
-def send_message(serializer, user):
-    return serializer.save(sender=user)
+def send_message(user, conversation_id, text, files=None):
+    if not conversation_id:
+        return None, "conversation is required"
+
+    try:
+        conversation = user.conversations.get(id=conversation_id)
+    except Conversation.DoesNotExist:
+        return None, "Conversation not found"
+
+    if not text and not files:
+        return None, "Message text or file is required"
+
+    message = Message.objects.create(
+        conversation=conversation,
+        sender=user,
+        text=text
+    )
+
+    if files:
+        for file in files:
+            Attachment.objects.create(message=message, file=file)
+
+    conversation.save()  # Update conversation updated_at
+    return message, None

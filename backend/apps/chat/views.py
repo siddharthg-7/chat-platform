@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count
 from .models import Conversation, Message, Attachment
 from .serializers import ConversationSerializer, MessageSerializer
+from .services import create_conversation, get_messages, send_message
 
 User = get_user_model()
 
@@ -23,25 +24,25 @@ class ConversationListView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
-        user2_id = request.data.get("user_id")
-        if not user2_id:
-            return Response({"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        conversation, error = create_conversation(
+            request.user,
+            request.data.get("user_id")
+        )
 
-        try:
-            user2 = User.objects.get(id=user2_id)
-        except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        if error:
+            if error == "exists":
+                serializer = ConversationSerializer(conversation)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            if error == "User not found":
+                return Response(
+                    {"error": error},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
-        # Check if conversation already exists (exact 2 participants: request.user and user2)
-        existing_convs = request.user.conversations.annotate(count=Count('participants')).filter(count=2, participants=user2)
-        existing_conv = existing_convs.first()
-        
-        if existing_conv:
-            serializer = ConversationSerializer(existing_conv)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        conversation = Conversation.objects.create()
-        conversation.participants.add(request.user, user2)
+            return Response(
+                {"error": error},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         serializer = ConversationSerializer(conversation)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -66,8 +67,6 @@ class MessageListView(generics.ListAPIView):
             return conversation.messages.select_related('sender', 'sender__profile').prefetch_related('attachments').all()
         except Conversation.DoesNotExist:
             return Message.objects.none()
-
-
 # -------------------------
 # SEND MESSAGE API
 # -------------------------

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Bell, Lock, Eye, MonitorSmartphone, Volume2, Shield } from 'lucide-react';
+import { Bell, Lock, MonitorSmartphone, Volume2, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { changePasswordRequest } from '../services/authService';
+
 
 const NAV_SECTIONS = [
   { label: 'Appearance', icon: MonitorSmartphone },
@@ -29,9 +31,22 @@ const Settings = () => {
   const [linkPreviews, setLinkPreviews] = useState(true);
   const [desktopNotifs, setDesktopNotifs] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [micEnabled, setMicEnabled] = useState(true);
+  const [cameraEnabled, setCameraEnabled] = useState(true);
   const [themeMode, setThemeMode] = useState(() => {
     return localStorage.getItem('theme') || 'dark';
   });
+    // Privacy Settings
+  const [onlineStatus, setOnlineStatus] = useState(true);
+  const [readReceipts, setReadReceipts] = useState(true);
+  const [friendRequests, setFriendRequests] = useState(true);
+  const [profileVisibility, setProfileVisibility] = useState("public");
+
+  // Password Fields (UI Only)
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const applyTheme = (mode) => {
     setThemeMode(mode);
@@ -49,6 +64,64 @@ const Settings = () => {
       }
     }
   };
+  const handlePasswordChange = async () => {
+  setPasswordError("");
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    setPasswordError("Please fill in all password fields.");
+    return;
+  }
+  if (newPassword.length < 8) {
+    setPasswordError("New password must be at least 8 characters.");
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    setPasswordError("New password and confirmation do not match.");
+    return;
+  }
+
+  try {
+    await changePasswordRequest({ currentPassword, newPassword });
+    setPasswordError("Password updated successfully!");
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+  } catch (error) {
+    setPasswordError(
+      error.response?.data?.error || error.response?.data?.old_password?.[0] || "Failed to update password."
+    );
+  }
+};
+  useEffect(() => {
+    if (themeMode === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else if (themeMode === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (systemDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  }, []); // empty array = runs once on mount
+  useEffect(() => {
+    if (themeMode !== 'system') return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const handleChange = (e) => {
+      if (e.matches) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [themeMode]);
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-surface)]">
@@ -177,17 +250,195 @@ const Settings = () => {
               </Card>
             )}
 
-            {(activeSection === 2 || activeSection === 3 || activeSection === 4) && (
+            {activeSection === 2 && (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Privacy & Security</CardTitle>
+                    <CardDescription>Manage your privacy preferences and account security.</CardDescription>
+                  </CardHeader>
+                 
+                  <CardContent>
+                    <div className="space-y-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-sm font-medium text-[var(--text)]">
+                            Show Online Status
+                          </h4>
+                          <p className="text-xs text-[var(--text-muted)] mt-1">
+                            Let others know when you're online.
+                          </p>
+                        </div>
+                        <Toggle
+                          on={onlineStatus}
+                          onToggle={() => setOnlineStatus(!onlineStatus)}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-sm font-medium text-[var(--text)]">
+                            Read Receipts
+                          </h4>
+                          <p className="text-xs text-[var(--text-muted)] mt-1">
+                            Show when you've read messages.
+                          </p>
+                        </div>
+                        <Toggle
+                          on={readReceipts}
+                          onToggle={() => setReadReceipts(!readReceipts)}
+                        />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="text-sm font-medium text-[var(--text)]">
+                              Allow Friend Requests
+                            </h4>
+                            <p className="text-xs text-[var(--text-muted)] mt-1">
+                              Allow others to send friend requests.
+                            </p>
+                          </div>
+                          <Toggle
+                            on={friendRequests}
+                            onToggle={() => setFriendRequests(!friendRequests)}
+                          />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div>
+                            <h4 className="text-sm font-medium text-[var(--text)]">
+                              Profile Visibility
+                            </h4>
+                            <p className="text-xs text-[var(--text-muted)] mt-1">
+                              Control who can see your profile details.
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 bg-[var(--bg-glass)] border border-[var(--border)] p-1 rounded-lg">
+                            {['Public', 'Friends', 'Private'].map((option) => {
+                              const val = option.toLowerCase();
+                              const active = profileVisibility === val;
+                              return (
+                                <button
+                                  key={option}
+                                  onClick={() => setProfileVisibility(val)}
+                                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 cursor-pointer ${
+                                  active
+                                    ? 'bg-[var(--accent)] text-white shadow-[0_0_10px_var(--accent-glow)]'
+                                    : 'text-[var(--text-muted)] hover:text-[var(--text)]'
+                                  }`}
+                                >
+                                  {option}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Change Password</CardTitle>
+                      <CardDescription>Update your account password.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-xs font-medium text-[var(--text-muted)] mb-1 block">
+                        Current Password
+                      </label>
+                      <input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-[var(--bg-glass)] border border-[var(--border)] text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
+                        placeholder="Enter current password"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-[var(--text-muted)] mb-1 block">
+                        New Password
+                      </label>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-[var(--bg-glass)] border border-[var(--border)] text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
+                        placeholder="Enter new password"
+                      />
+                      </div>
+                      <div>
+                      <label className="text-xs font-medium text-[var(--text-muted)] mb-1 block">
+                        Confirm New Password
+                      </label>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-[var(--bg-glass)] border border-[var(--border)] text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
+                        placeholder="Confirm new password"
+                      />
+                    </div>
+                    {passwordError && (
+                      <p className="text-xs text-red-400">{passwordError}</p>
+                    )}
+                    <Button onClick={handlePasswordChange} className="w-full">
+                      Update Password
+                    </Button>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+            {activeSection === 3 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>{NAV_SECTIONS[activeSection].label}</CardTitle>
-                  <CardDescription>Coming soon — this section is under construction.</CardDescription>
+                  <CardTitle>Audio & Video</CardTitle>
+                  <CardDescription>
+                    Configure audio and video preferences.
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col items-center justify-center py-12 text-center text-[var(--text-muted)]">
-                    {React.createElement(NAV_SECTIONS[activeSection].icon, { size: 36, className: 'mb-3 opacity-30' })}
-                    <p className="text-sm">This section will be available in a future update.</p>
+              <CardContent className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-medium text-[var(--text)]">
+                      Microphone Access
+                    </h4>
+                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                      Allow the app to use your microphone for calls.
+                    </p>
                   </div>
+                  <Toggle
+                    on={micEnabled}
+                    onToggle={() => setMicEnabled(!micEnabled)}
+                  />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-[var(--text)]">
+                        Camera Access
+                      </h4>
+                      <p className="text-xs text-[var(--text-muted)] mt-1">
+                        Allow the app to use your camera for video calls.
+                      </p>
+                    </div>
+                    <Toggle
+                      on={cameraEnabled}
+                      onToggle={() => setCameraEnabled(!cameraEnabled)}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {activeSection === 4 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Advanced</CardTitle>
+                  <CardDescription>
+                    Advanced application settings.
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                  <p className="text-sm text-[var(--text-muted)]">
+                    More advanced settings will be added here.
+                  </p>
                 </CardContent>
               </Card>
             )}
