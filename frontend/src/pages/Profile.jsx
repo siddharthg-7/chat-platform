@@ -137,6 +137,7 @@ const Profile = () => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      dispatch(logout());
       navigate('/login');
     }
   };
