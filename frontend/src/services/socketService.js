@@ -26,7 +26,13 @@ export class ChatSocket {
   connect() {
     const url = `${WS_BASE_URL}/ws/chat/${this.roomName}/`;
     this.onStatusChange("connecting");
-    this.socket = new WebSocket(url);
+    
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      this.socket = new WebSocket(url, ["access_token", token]);
+    } else {
+      this.socket = new WebSocket(url);
+    }
 
     this.socket.onopen = () => {
       this.reconnectAttempts = 0;

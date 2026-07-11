@@ -7,7 +7,7 @@ import api from './api';
  * (or just flip the constant below) and every call here switches
  * to the real api.post(...) automatically — no other file needs to change.
  */
-const USE_MOCK_AUTH = import.meta.env.VITE_USE_MOCK_AUTH !== 'false';
+const USE_MOCK_AUTH = import.meta.env.VITE_USE_MOCK_AUTH === 'true';
 
 const MOCK_DELAY_MS = 600;
 
@@ -32,7 +32,7 @@ export async function loginRequest({ email, password }) {
     };
   }
 
-  return api.post('/auth/login', { email, password });
+  return api.post('/accounts/login/', { email, password });
 }
 
 export async function signupRequest({ firstName, lastName, email, password }) {
@@ -47,11 +47,22 @@ export async function signupRequest({ firstName, lastName, email, password }) {
     };
   }
 
-  return api.post('/auth/signup', {
+  return api.post('/accounts/signup/', {
     first_name: firstName,
     last_name: lastName,
     email,
     password,
+  });
+}
+
+export async function changePasswordRequest({ currentPassword, newPassword }) {
+  if (USE_MOCK_AUTH) {
+    await wait(MOCK_DELAY_MS);
+    return { data: { message: 'Password changed successfully.' } };
+  }
+  return api.put('/accounts/change-password/', {
+    old_password: currentPassword,
+    new_password: newPassword,
   });
 }
 

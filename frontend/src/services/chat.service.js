@@ -13,7 +13,7 @@ export const chatService = {
 
   getMessages: async (conversationId) => {
     const response = await api.get(`/chat/messages/${conversationId}/`);
-    return response.data;
+    return response.data.results || response.data;
   },
 
   sendMessage: async (conversationId, text = '', files = []) => {

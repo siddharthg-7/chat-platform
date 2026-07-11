@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Bell, Lock, MonitorSmartphone, Volume2, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { changePasswordRequest } from '../services/authService';
 
 
 const NAV_SECTIONS = [
@@ -63,7 +64,7 @@ const Settings = () => {
       }
     }
   };
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
   setPasswordError("");
 
   if (!currentPassword || !newPassword || !confirmPassword) {
@@ -79,13 +80,17 @@ const Settings = () => {
     return;
   }
 
-  // TODO: replace with actual API call to update password on the backend
-  console.log("Password change submitted:", { currentPassword, newPassword });
-
-  setCurrentPassword("");
-  setNewPassword("");
-  setConfirmPassword("");
-  setPasswordError("");
+  try {
+    await changePasswordRequest({ currentPassword, newPassword });
+    setPasswordError("Password updated successfully!");
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+  } catch (error) {
+    setPasswordError(
+      error.response?.data?.error || error.response?.data?.old_password?.[0] || "Failed to update password."
+    );
+  }
 };
   useEffect(() => {
     if (themeMode === 'dark') {

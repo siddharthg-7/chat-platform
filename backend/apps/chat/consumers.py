@@ -35,7 +35,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
-        await self.accept()
+        if 'access_token' in self.scope.get('subprotocols', []):
+            await self.accept(subprotocol='access_token')
+        else:
+            await self.accept()
         
         await self.set_online_status(True)
         await self.broadcast_presence("user_online")

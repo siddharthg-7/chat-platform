@@ -119,7 +119,8 @@ class ChatConsumerTests(TransactionTestCase):
         # Connect user1
         communicator = WebsocketCommunicator(
             application,
-            f"/ws/chat/{conversation.id}/?token={token}"
+            f"/ws/chat/{conversation.id}/",
+            subprotocols=["access_token", str(token)]
         )
         connected, subprotocol = await communicator.connect()
         self.assertTrue(connected)
@@ -128,7 +129,8 @@ class ChatConsumerTests(TransactionTestCase):
         token2 = str(AccessToken.for_user(user2))
         communicator2 = WebsocketCommunicator(
             application,
-            f"/ws/chat/{conversation.id}/?token={token2}"
+            f"/ws/chat/{conversation.id}/",
+            subprotocols=["access_token", str(token2)]
         )
         connected2, subprotocol2 = await communicator2.connect()
         self.assertTrue(connected2)
