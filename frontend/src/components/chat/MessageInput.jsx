@@ -1,10 +1,6 @@
+// frontend/src/components/chat/MessageInput.jsx
 import React, { useState, useEffect, useRef } from "react";
-import {
-  Smile,
-  Paperclip,
-  Send,
-} from "lucide-react";
-
+import { Smile, Paperclip, Send } from "lucide-react";
 import { useSelector, useDispatch } from 'react-redux';
 import { addMessage } from '@/store/slices/chatSlice';
 import wsService from '@/services/websocket';
@@ -18,7 +14,6 @@ const MessageInput = () => {
   const typingTimeoutRef = useRef(null);
   const isTypingRef = useRef(false);
 
-  // Clean up typing timeout on unmount or activeConversation change
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) {
@@ -37,13 +32,11 @@ const MessageInput = () => {
 
     if (!activeConversation) return;
 
-    // Send typing start when user begins typing
     if (!isTypingRef.current && val.trim().length > 0) {
       wsService.sendTypingStart();
       isTypingRef.current = true;
     }
 
-    // Reset typing stop timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
@@ -60,9 +53,8 @@ const MessageInput = () => {
     if (!message.trim() || !activeConversation) return;
 
     const textToSend = message.trim();
-    setMessage(""); // Clear input immediately
+    setMessage("");
     
-    // Stop typing indicator immediately on send
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
@@ -73,7 +65,6 @@ const MessageInput = () => {
 
     const tempId = 'pending-' + Date.now();
 
-    // Add optimistic pending message to state
     const optimisticMessage = {
       id: tempId,
       conversation: activeConversation,
@@ -87,7 +78,6 @@ const MessageInput = () => {
     dispatch(addMessage(optimisticMessage));
 
     try {
-      // Send message via WS
       wsService.sendMessage(textToSend, tempId);
     } catch (error) {
       console.error("Failed to send message via WebSocket:", error);
@@ -95,19 +85,18 @@ const MessageInput = () => {
   };
 
   return (
-    <footer className="border-t border-wa-border bg-wa-panel p-4">
+    <footer className="border-t border-[var(--border)] bg-[var(--bg-panel)] p-4">
       <div className="flex items-center gap-3">
-
         <button
           type="button"
-          className="rounded-full p-2 text-wa-text-muted transition hover:bg-wa-panel-hover hover:text-wa-text"
+          className="rounded-full p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text)]"
         >
           <Smile className="h-5 w-5" />
         </button>
 
         <button
           type="button"
-          className="rounded-full p-2 text-wa-text-muted transition hover:bg-wa-panel-hover hover:text-wa-text"
+          className="rounded-full p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text)]"
         >
           <Paperclip className="h-5 w-5" />
         </button>
@@ -126,15 +115,17 @@ const MessageInput = () => {
             flex-1
             rounded-full
             border
-            border-wa-border
-            bg-wa-bg
+            border-[var(--border)]
+            bg-[var(--bg-glass)]
             px-5
             py-3
             text-sm
-            text-wa-text
+            text-[var(--text)]
             outline-none
-            placeholder:text-wa-text-muted
-            focus:border-wa-teal
+            placeholder:text-[var(--text-muted)]
+            focus:border-[var(--accent)]
+            transition-all
+            duration-200
           "
         />
 
@@ -149,8 +140,8 @@ const MessageInput = () => {
             items-center
             justify-center
             rounded-full
-            bg-wa-teal
-            text-wa-bg
+            bg-[var(--accent)]
+            text-white
             transition
             hover:scale-105
             hover:opacity-90

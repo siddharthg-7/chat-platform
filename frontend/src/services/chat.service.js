@@ -3,7 +3,7 @@ import api from './api';
 export const chatService = {
   getConversations: async () => {
     const response = await api.get('/chat/conversations/');
-    return response.data;
+    return response.data.results ?? response.data;
   },
 
   createConversation: async (userId) => {
@@ -13,7 +13,7 @@ export const chatService = {
 
   getMessages: async (conversationId) => {
     const response = await api.get(`/chat/messages/${conversationId}/`);
-    return response.data.results || response.data;
+    return response.data.results ?? response.data;
   },
 
   sendMessage: async (conversationId, text = '', files = []) => {
@@ -38,4 +38,3 @@ export const chatService = {
     return response.data;
   },
 };
-

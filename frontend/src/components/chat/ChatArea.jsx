@@ -15,7 +15,6 @@ const ChatArea = () => {
 
   const chat = conversations.find(c => c.id === activeConversation);
   
-  // Map conversation for ChatHeader
   const otherParticipant = chat?.participants?.find(p => p.username !== user?.username) || chat?.participants?.[0];
   const contactName = chat?.is_group ? chat.name : (otherParticipant?.username || 'Unknown');
   const isOnline = otherParticipant ? onlineUsers.includes(otherParticipant.id) : false;
@@ -27,14 +26,10 @@ const ChatArea = () => {
   };
 
   return (
-    <section className="flex h-full w-full flex-col bg-slate-950">
-
+    <section className="flex h-full w-full flex-col bg-base">
       <ChatHeader chat={mappedChat} />
-
       <ChatMessages />
-
       <MessageInput />
-
     </section>
   );
 };

@@ -1,3 +1,4 @@
+// frontend/src/components/chat/MessageBubble.jsx
 import React from "react";
 import { Check, CheckCheck } from "lucide-react";
 
@@ -6,9 +7,7 @@ const MessageBubble = ({ message }) => {
 
   return (
     <div
-      className={`flex ${
-        isIncoming ? "justify-start" : "justify-end"
-      }`}
+      className={`flex ${isIncoming ? "justify-start" : "justify-end"}`}
     >
       <div
         className={`
@@ -23,14 +22,14 @@ const MessageBubble = ({ message }) => {
 
           ${
             isIncoming
-              ? "rounded-tl-lg bg-slate-800 text-white"
-              : "rounded-tr-lg bg-emerald-600 text-white"
+              ? "rounded-tl-lg bg-[var(--msg-in)] text-[var(--text)]"
+              : "rounded-tr-lg bg-[var(--msg-out)] text-white"
           }
         `}
       >
         {/* Sender Name (Only for incoming group messages) */}
         {isIncoming && message.sender !== "You" && (
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-400">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--accent)]">
             {message.sender}
           </p>
         )}
@@ -42,12 +41,11 @@ const MessageBubble = ({ message }) => {
 
         {/* Footer */}
         <div className="mt-3 flex items-center justify-end gap-1">
-
           <span
             className={`text-[11px] ${
               isIncoming
-                ? "text-slate-400"
-                : "text-emerald-100"
+                ? "text-[var(--text-muted)]"
+                : "text-white/80"
             }`}
           >
             {message.time}
@@ -62,7 +60,7 @@ const MessageBubble = ({ message }) => {
             ) : (
               <Check
                 size={16}
-                className="text-emerald-100"
+                className="text-white/70"
               />
             ))}
         </div>
