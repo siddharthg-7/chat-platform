@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Avatar } from '@/components/ui/Avatar';
 import Loader from '@/components/ui/Loader';
-import { Camera, MapPin, Mail, Calendar, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Camera, Mail, Calendar, AlertCircle, CheckCircle, Loader2, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { authService } from '../services/auth.service';
 import { updateProfile } from '../store/slices/authSlice';
@@ -14,6 +15,7 @@ const DEFAULT_COVER_GRADIENT = 'linear-gradient(to bottom right, #10b981, #04785
 
 const Profile = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
 
   const [form, setForm] = useState({
@@ -30,7 +32,6 @@ const Profile = () => {
 
   const avatarInputRef = useRef(null);
 
-  // Sync Redux user details to local state
   useEffect(() => {
     if (user) {
       setForm({
@@ -57,19 +58,16 @@ const Profile = () => {
     setSuccess(false);
 
     try {
-      // 1. Update basic user details (first_name, last_name, email)
       const updatedUser = await authService.updateProfile({
         first_name: form.first_name.trim(),
         last_name: form.last_name.trim(),
         email: form.email.trim(),
       });
 
-      // 2. Update profile bio
       const formData = new FormData();
       formData.append('bio', form.bio.trim());
       const updatedProfileDetails = await authService.updateProfileDetails(formData);
 
-      // 3. Dispatch to Redux store
       dispatch(updateProfile({
         ...updatedUser,
         profile: {
@@ -129,11 +127,20 @@ const Profile = () => {
       alert('Failed to upload avatar.');
     } finally {
       setUploadingAvatar(false);
-      e.target.value = ''; // Reset file input
+      e.target.value = '';
     }
   };
 
-  // Safe avatar URL lookup (matches back-end media urls)
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      navigate('/login');
+    }
+  };
+
   const getAvatarUrl = () => {
     if (user.profile?.avatar) {
       return user.profile.avatar.startsWith('http')
@@ -154,13 +161,11 @@ const Profile = () => {
           transition={{ duration: 0.4 }}
           className="relative"
         >
-          {/* Banner */}
           <div className="h-52 w-full rounded-2xl overflow-hidden relative">
             <div
               className="absolute inset-0"
               style={{ background: DEFAULT_COVER_GRADIENT }}
             />
-            {/* Glassmorphism overlay pattern */}
             <div
               className="absolute inset-0 opacity-20"
               style={{
@@ -169,20 +174,19 @@ const Profile = () => {
             />
           </div>
 
-          {/* Avatar overlapping banner */}
           <div className="absolute -bottom-14 left-6 flex items-end gap-4">
             <div className="relative">
               <Avatar
                 src={getAvatarUrl()}
                 fallback={user.username.substring(0, 2).toUpperCase()}
-                className="h-28 w-28 border-4 border-[var(--bg-surface)] shadow-md bg-emerald-700 font-bold text-white text-xl"
+                className="h-28 w-28 border-4 border-[var(--bg-surface)] shadow-md bg-[var(--accent)] font-bold text-white text-xl"
               />
               <Button
                 size="icon"
                 type="button"
                 disabled={uploadingAvatar}
                 onClick={() => avatarInputRef.current?.click()}
-                className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full text-xs shadow-md bg-emerald-500 hover:bg-emerald-600 border border-slate-800"
+                className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full text-xs shadow-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] border border-[var(--border)]"
               >
                 {uploadingAvatar ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -202,7 +206,7 @@ const Profile = () => {
               <h1 className="text-xl font-bold text-white">
                 {[user.first_name, user.last_name].filter(Boolean).join(' ') || user.username}
               </h1>
-              <p className="text-sm text-slate-400">@{user.username}</p>
+              <p className="text-sm text-[var(--text-muted)]">@{user.username}</p>
             </div>
           </div>
         </motion.div>
@@ -218,22 +222,32 @@ const Profile = () => {
           >
             <Card>
               <CardHeader>
-                <CardTitle className="text-base text-white">About Me</CardTitle>
+                <CardTitle className="text-base text-black dark:text-white">About Me</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-[13px] text-[var(--text-muted)] leading-relaxed min-h-[40px]">
                   {user.profile?.bio || "No bio added yet."}
                 </p>
-                <div className="space-y-2.5 pt-4 border-t border-slate-800">
+                <div className="space-y-2.5 pt-4 border-t border-[var(--border)]">
                   <div className="flex items-center gap-2.5 text-[13px] text-[var(--text-muted)]">
-                    <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <Mail className="h-3.5 w-3.5 text-[var(--text-muted)] shrink-0" />
                     <span className="truncate">{user.email || 'No email address'}</span>
                   </div>
                   <div className="flex items-center gap-2.5 text-[13px] text-[var(--text-muted)]">
-                    <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <Calendar className="h-3.5 w-3.5 text-[var(--text-muted)] shrink-0" />
                     <span>Member since {user.created_at ? new Date(user.created_at).toLocaleDateString([], { month: 'long', year: 'numeric' }) : '2026'}</span>
                   </div>
                 </div>
+
+                {/* Logout Button */}
+                <Button
+                  variant="destructive"
+                  className="w-full mt-4 gap-2"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </Button>
               </CardContent>
             </Card>
           </motion.div>
@@ -285,12 +299,12 @@ const Profile = () => {
                     <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Bio</label>
                     <textarea
                       placeholder="Tell us about yourself…"
-                      className="flex min-h-[100px] w-full rounded-xl border border-slate-700 bg-slate-800/40 px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all duration-200 custom-scrollbar resize-none"
+                      className="flex min-h-[100px] w-full rounded-xl border border-[var(--border)] bg-[var(--bg-glass)] px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border-active)] focus:ring-1 focus:ring-[var(--accent)] transition-all duration-200 custom-scrollbar resize-none"
                       value={form.bio}
                       onChange={(e) => setForm({ ...form, bio: e.target.value })}
                       maxLength={500}
                     />
-                    <div className="flex justify-end text-[10px] text-slate-500">
+                    <div className="flex justify-end text-[10px] text-[var(--text-muted)]">
                       {form.bio.length} / 500 characters
                     </div>
                   </div>
@@ -309,7 +323,7 @@ const Profile = () => {
                     </div>
                   )}
 
-                  <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                  <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border)]">
                     <Button variant="outline" type="button" onClick={handleCancel} disabled={saving}>
                       Cancel
                     </Button>

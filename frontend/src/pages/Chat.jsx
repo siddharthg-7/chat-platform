@@ -17,7 +17,6 @@ const Chat = () => {
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef(null);
 
-  // Fetch conversations on mount
   useEffect(() => {
     chatService.getConversations().then((data) => {
       dispatch(setConversations(data));
@@ -27,7 +26,6 @@ const Chat = () => {
     }).catch(console.error);
   }, [dispatch]);
 
-  // Fetch messages and connect WS when activeConversation changes
   useEffect(() => {
     if (activeConversation) {
       chatService.getMessages(activeConversation).then((data) => {
@@ -74,7 +72,7 @@ const Chat = () => {
   }, [isDragging]);
 
   return (
-    <div className="flex-1 flex overflow-hidden bg-slate-950">
+    <div className="flex-1 flex overflow-hidden bg-base">
       <div ref={containerRef} className="flex flex-1 overflow-hidden h-full">
         <div style={{ width: `${chatListWidth}px` }} className="shrink-0 h-full">
           <ChatSidebar />
@@ -84,7 +82,7 @@ const Chat = () => {
           onMouseDown={() => setIsDragging(true)}
           className="group relative w-[6px] cursor-col-resize bg-transparent transition"
         >
-          <div className="absolute left-1/2 top-0 h-full w-[2px] -translate-x-1/2 rounded-full bg-transparent transition-all duration-200 group-hover:bg-emerald-500" />
+          <div className="absolute left-1/2 top-0 h-full w-[2px] -translate-x-1/2 rounded-full bg-transparent transition-all duration-200 group-hover:bg-accent" />
         </div>
 
         <div className="flex-1 min-w-0 h-full overflow-hidden">
