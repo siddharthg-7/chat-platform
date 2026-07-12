@@ -32,6 +32,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    user: root
     volumes:
       - ./backend:/app
       - static_volume:/app/static
@@ -41,8 +42,10 @@ services:
     env_file:
       - backend/.env
     command: >
-      sh -c "python manage.py collectstatic --noinput &&
-             python manage.py migrate &&
+      sh -c "mkdir -p /app/static /app/media && \
+             chown -R django:django /app/static /app/media && \
+             python manage.py collectstatic --noinput && \
+             python manage.py migrate && \
              daphne -b 0.0.0.0 -p 8000 config.asgi:application"
     depends_on:
       - db
