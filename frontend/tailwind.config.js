@@ -40,6 +40,16 @@ export default {
         panel:    'var(--bg-panel)',
         surface:  'var(--bg-surface)',
         base:     'var(--bg-base)',
+
+        /* Added — these were used across the app (bg-glass, hover:bg-glass-hover,
+           bg-glass-active) but were never registered as Tailwind color tokens,
+           so those utility classes silently produced no CSS. This is why
+           several hover states / panel backgrounds appeared invisible. */
+        glass: {
+          DEFAULT: 'var(--bg-glass)',
+          hover:   'var(--bg-glass-hover)',
+          active:  'var(--bg-glass-active)',
+        },
       },
       borderColor: {
         DEFAULT: 'var(--border)',

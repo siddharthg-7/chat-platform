@@ -1,16 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
-import { MessageSquare, Users, Activity, ArrowUpRight, Plus, Search, TrendingUp, Wifi, Database, Server, UserCircle, X, Mail, Clock } from 'lucide-react';
+import { MessageSquare, Users, Activity, ArrowUpRight, Plus, Search, TrendingUp, UserCircle, X, Mail, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatService } from '@/services/chat.service';
-import api from '@/services/api';
-import wsService from '@/services/websocket';
 import { setConversations, setActiveConversation } from '@/store/slices/chatSlice';
 import NewChatModal from '@/components/chat/NewChatModal';
 
@@ -20,51 +19,12 @@ const statusColor = {
   offline: 'bg-muted-foreground',
 };
 
-function statusVariant(s) {
-  if (s === 'ok' || s === 'Connected') return 'success';
-  if (s === 'Checking…') return 'outline';
-  return 'destructive';
-}
-
 const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-
-  const [sysStatus, setSysStatus] = useState({
-    ws: 'Checking…',
-    db: 'Checking…',
-    redis: 'Checking…',
-  });
-
-  const refreshStatus = useCallback(async () => {
-    const wsState = wsService.socket?.readyState;
-    const wsLabel =
-      wsState === WebSocket.OPEN ? 'Connected' :
-      wsState === WebSocket.CONNECTING ? 'Connecting…' :
-      'Disconnected';
-
-    let dbLabel = 'Error';
-    let redisLabel = 'Error';
-    try {
-      const { data } = await api.get('/common/health/');
-      dbLabel = data.database === 'ok' ? 'Healthy' : 'Error';
-      redisLabel = data.redis === 'ok' ? 'Optimal' : 'Error';
-    } catch {
-      dbLabel = 'Unreachable';
-      redisLabel = 'Unreachable';
-    }
-
-    setSysStatus({ ws: wsLabel, db: dbLabel, redis: redisLabel });
-  }, []);
-
-  useEffect(() => {
-    refreshStatus();
-    const id = setInterval(refreshStatus, 30000);
-    return () => clearInterval(id);
-  }, [refreshStatus]);
 
   const { user } = useSelector((state) => state.auth);
   const { conversations, onlineUsers } = useSelector((state) => state.chat);
@@ -75,7 +35,10 @@ const Dashboard = () => {
       .then((data) => {
         dispatch(setConversations(data));
       })
-      .catch((err) => console.error('[Dashboard] Failed to fetch conversations:', err));
+      .catch((err) => {
+        console.error('[Dashboard] Failed to fetch conversations:', err);
+        toast.error('Could not load your conversations. Pull to refresh or try again shortly.');
+      });
   }, [dispatch]);
 
   if (!user) return null;
@@ -286,10 +249,10 @@ const Dashboard = () => {
 
         </div>
 
-        {/* Lower Grid */}
+        {/* Lower Grid: Contacts + Quick Actions */}
         <div className="grid gap-4 lg:grid-cols-3">
 
-          {/* All Contacts Card */}
+          {/* Contacts Card */}
           <motion.div className="lg:col-span-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.4 }}>
             <Card className="h-full">
               <CardHeader>
@@ -340,70 +303,20 @@ const Dashboard = () => {
             </Card>
           </motion.div>
 
-          {/* System Status Card */}
+          {/* Quick Actions Card — buttons only, no system health metrics */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.4 }}>
             <Card className="h-full">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>System Status</CardTitle>
-                    <CardDescription>Real-time platform metrics</CardDescription>
-                  </div>
-                  <button
-                    onClick={refreshStatus}
-                    title="Refresh status"
-                    className="text-muted-foreground hover:text-accent transition-colors"
-                  >
-                    <Activity className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>Jump to what you need</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-5 pt-0">
-                <div className="space-y-3">
-                  {[
-                    { label: 'WebSocket', value: sysStatus.ws, icon: Wifi },
-                    { label: 'Database', value: sysStatus.db, icon: Database },
-                    { label: 'Redis Pub/Sub', value: sysStatus.redis, icon: Server },
-                  ].map(({ label, value, icon: Icon }) => {
-                    const isOk = value === 'Connected' || value === 'Healthy' || value === 'Optimal';
-                    const isChecking = value === 'Checking…';
-                    return (
-                      <div key={label} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Icon className="h-3.5 w-3.5" />
-                          {label}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          {isOk && (
-                            <span className="relative flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
-                            </span>
-                          )}
-                          {isChecking && (
-                            <span className="h-2 w-2 rounded-full bg-muted-foreground animate-pulse" />
-                          )}
-                          {!isOk && !isChecking && (
-                            <span className="h-2 w-2 rounded-full bg-rose-500" />
-                          )}
-                          <Badge variant={statusVariant(value)} className="text-[10px] py-0 px-1.5">
-                            {value}
-                          </Badge>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="pt-4 border-t border-border">
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {['Add Contact', 'New Chat', 'Settings', 'Support'].map((action) => (
-                      <Button key={action} variant="outline" size="sm" className="w-full text-xs" onClick={() => handleQuickAction(action)}>
-                        {action}
-                      </Button>
-                    ))}
-                  </div>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-2 gap-2">
+                  {['Add Contact', 'New Chat', 'Settings', 'Support'].map((action) => (
+                    <Button key={action} variant="outline" size="sm" className="w-full text-xs" onClick={() => handleQuickAction(action)}>
+                      {action}
+                    </Button>
+                  ))}
                 </div>
               </CardContent>
             </Card>
