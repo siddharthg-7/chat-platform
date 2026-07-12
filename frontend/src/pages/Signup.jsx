@@ -38,8 +38,13 @@ const Signup = () => {
     dispatch(setAuthStart());
     try {
       await authService.signup(form);
-      const loginData = await authService.login({ username: form.username, password: form.password });
-      dispatch(setAuthSuccess({ user: { username: form.username } }));
+      await authService.login({ username: form.username, password: form.password });
+      // Fetch the full profile (first_name, last_name, email, avatar, etc.)
+      // instead of dispatching a partial { username } object — otherwise the
+      // name shows blank on the dashboard/sidebar until the next full page
+      // refresh (when App.jsx's mount effect finally hydrates it).
+      const fullUser = await authService.getProfile();
+      dispatch(setAuthSuccess({ user: fullUser }));
       navigate('/');
     } catch (err) {
       dispatch(setAuthFailure(
