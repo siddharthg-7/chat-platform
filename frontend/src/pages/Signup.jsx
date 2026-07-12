@@ -3,9 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Zap, ArrowRight, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AuthLayout from '@/components/auth/AuthLayout.jsx';
+import logo from '@/assets/logo.svg';
 import { authService } from '../services/auth.service';
 import { setAuthStart, setAuthSuccess, setAuthFailure } from '../store/slices/authSlice';
 
@@ -65,9 +66,7 @@ const Signup = () => {
       >
         {/* Logo + Header */}
         <div className="mb-5 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent)]">
-            <Zap className="h-6 w-6 text-white" fill="white" />
-          </div>
+          <img src={logo} alt="ChatsApp" className="mb-3 h-12 w-12" />
           <span className="text-[14px] font-bold tracking-tight text-[var(--text)]">
             ChatsApp
           </span>

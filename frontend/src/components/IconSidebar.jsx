@@ -5,11 +5,11 @@ import {
   LayoutDashboard,
   MessageSquare,
   Settings,
-  Zap,
   ChevronRight,
   ChevronLeft
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
+import logo from '@/assets/logo.svg';
 
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: 'Dashboard', to: '/' },
@@ -76,9 +76,7 @@ const IconSidebar = () => {
     >
       {/* Logo */}
       <div className={`mb-4 flex items-center ${expanded ? 'px-4 w-full justify-start gap-3' : 'justify-center w-10 h-10 rounded-xl'} transition-all cursor-pointer`}>
-        <div className="flex items-center justify-center shrink-0 w-10 h-10 rounded-xl bg-accent">
-          <Zap className="h-5 w-5 text-white" fill="white" />
-        </div>
+        <img src={logo} alt="ChatPlatform" className="shrink-0 w-10 h-10" />
         {expanded && (
           <span className="font-bold tracking-tight text-foreground text-lg whitespace-nowrap overflow-hidden">
             ChatPlatform

@@ -3,9 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Zap, ArrowRight, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AuthLayout from '@/components/auth/AuthLayout.jsx';
+import logo from '@/assets/logo.svg';
 import { authService } from '../services/auth.service';
 import { setAuthStart, setAuthSuccess, setAuthFailure } from '../store/slices/authSlice';
 
@@ -57,9 +58,7 @@ const Login = () => {
       >
         {/* Logo + Header */}
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent)]">
-            <Zap className="h-7 w-7 text-white" fill="white" />
-          </div>
+          <img src={logo} alt="ChatPlatform" className="mb-5 h-14 w-14" />
           <h1 className="text-2xl font-bold tracking-tight text-[var(--text)]">Welcome back</h1>
           <p className="mt-1.5 text-sm text-[var(--text-muted)]">Sign in to continue to your workspace</p>
         </div>

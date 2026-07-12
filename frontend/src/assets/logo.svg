@@ -1,27 +1,21 @@
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Chat Platform logo</title>
-  <desc id="desc">A modern purple and blue app icon formed from two overlapping chat bubbles.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <defs>
-    <linearGradient id="background" x1="58" y1="48" x2="465" y2="472" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#34208F"/>
-      <stop offset="0.5" stop-color="#5747D9"/>
-      <stop offset="1" stop-color="#18B9E5"/>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="100%" stop-color="#059669"/>
     </linearGradient>
-    <linearGradient id="frontBubble" x1="160" y1="150" x2="356" y2="369" gradientUnits="userSpaceOnUse">
-      <stop stop-color="white"/>
-      <stop offset="1" stop-color="#E8E9FF"/>
-    </linearGradient>
-    <filter id="shadow" x="84" y="106" width="362" height="334" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#150C50" flood-opacity="0.25"/>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#059669" flood-opacity="0.25"/>
     </filter>
   </defs>
-  <rect x="24" y="24" width="464" height="464" rx="132" fill="url(#background)"/>
-  <path d="M110 171C110 118.5 152.5 76 205 76H323C375.5 76 418 118.5 418 171V230C418 282.5 375.5 325 323 325H279L214 379V325H205C152.5 325 110 282.5 110 230V171Z" fill="#A9ABFF" fill-opacity="0.32"/>
-  <g filter="url(#shadow)">
-    <path d="M131 219C131 165.4 174.4 122 228 122H329C382.6 122 426 165.4 426 219V273C426 326.6 382.6 370 329 370H273L194 432V370H228C174.4 370 131 326.6 131 273V219Z" fill="url(#frontBubble)"/>
-  </g>
-  <circle cx="211" cy="246" r="17" fill="#5547D4"/>
-  <circle cx="278" cy="246" r="17" fill="#5547D4"/>
-  <circle cx="345" cy="246" r="17" fill="#5547D4"/>
-  <path d="M206 302H350" stroke="#B8BAF3" stroke-width="16" stroke-linecap="round"/>
+
+  <!-- rounded square backdrop -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#g1)" filter="url(#soft)"/>
+
+  <!-- two people, representing 1:1 chat -->
+  <circle cx="23" cy="26" r="7" fill="#FFFFFF"/>
+  <path d="M23 35c-6.6 0-12 4-12 9v2h24v-2c0-5-5.4-9-12-9z" fill="#FFFFFF"/>
+
+  <circle cx="41" cy="26" r="7" fill="#FFFFFF" opacity="0.55"/>
+  <path d="M41 35c-1 0-2 .1-2.9 .3c2.4 1.9 3.9 4.6 3.9 7.7v2h11v-2c0-5-5.4-9-12-9z" fill="#FFFFFF" opacity="0.55"/>
 </svg>
