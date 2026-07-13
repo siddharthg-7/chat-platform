@@ -12,7 +12,13 @@ if not SECRET_KEY:
     raise ValueError("SECRET_KEY environment variable is required and cannot be empty.")
 
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+if DEBUG:
+    ALLOWED_HOSTS = ['*']
+else:
+    allowed_hosts = os.environ.get('ALLOWED_HOSTS')
+    if not allowed_hosts:
+        raise ValueError("ALLOWED_HOSTS environment variable is required in production.")
+    ALLOWED_HOSTS = allowed_hosts.split(',')
 FRONTEND_URL = os.environ.get("FRONTEND_URL","http://localhost:3000")
 
 INSTALLED_APPS = [
@@ -70,22 +76,37 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': os.environ.get('DATABASE_ENGINE', 'django.db.backends.postgresql'),
-        'NAME': os.environ.get('DATABASE_NAME', 'postgres'),
-        'USER': os.environ.get('DATABASE_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DATABASE_PASSWORD', 'postgres'),
-        'HOST': os.environ.get('DATABASE_HOST', '127.0.0.1'),
-        'PORT': os.environ.get('DATABASE_PORT', '5432'),
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': os.environ.get('DATABASE_ENGINE', 'django.db.backends.postgresql'),
+            'NAME': os.environ.get('DATABASE_NAME', 'postgres'),
+            'USER': os.environ.get('DATABASE_USER', 'postgres'),
+            'PASSWORD': os.environ.get('DATABASE_PASSWORD', ''),
+            'HOST': os.environ.get('DATABASE_HOST', '127.0.0.1'),
+            'PORT': os.environ.get('DATABASE_PORT', '5432'),
+        }
     }
-}
-
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': os.environ['DATABASE_ENGINE'],
+            'NAME': os.environ['DATABASE_NAME'],
+            'USER': os.environ['DATABASE_USER'],
+            'PASSWORD': os.environ['DATABASE_PASSWORD'],
+            'HOST': os.environ['DATABASE_HOST'],
+            'PORT': os.environ['DATABASE_PORT'],
+        }
+    }
+if DEBUG:
+    REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/0')
+else:
+    REDIS_URL = os.environ['REDIS_URL']
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/0')],
+            'hosts': [REDIS_URL],
         },
     },
 }
@@ -124,13 +145,16 @@ MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
     CORS_ALLOW_ALL_ORIGINS = False
-    CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost').split(',')
 
+    cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS')
+    if not cors_origins:
+        raise ValueError("CORS_ALLOWED_ORIGINS environment variable is required in production.")
+
+    CORS_ALLOWED_ORIGINS = cors_origins.split(',')
 CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {
