@@ -3,19 +3,25 @@ from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_encode
-from django.utils.http import urlsafe_base64_decode
-from django.utils.encoding import force_str
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.conf import settings
 from django.db.models import Q
-from .serializers import (SignupSerializer, UserSerializer, ProfileSerializer, ChangePasswordSerializer,ForgotPasswordSerializer,ResetPasswordSerializer,)
+
+from .serializers import (
+    SignupSerializer,
+    UserSerializer,
+    ProfileSerializer,
+    ChangePasswordSerializer,
+    ForgotPasswordSerializer,
+    ResetPasswordSerializer,
+)
 
 User = get_user_model()
 
@@ -88,7 +94,6 @@ class UpdateProfileDetailsView(generics.UpdateAPIView):
 
     def get_object(self):
         return self.request.user.profile
-    
 class ChangePasswordView(generics.UpdateAPIView):
     """
     Allows an authenticated user to change their password.

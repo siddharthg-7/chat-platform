@@ -5,7 +5,7 @@ const initialState = {
   activeConversation: null,
   messages: [],
   onlineUsers: [],
-  typingUsers: [],   // user IDs currently typing in active conversation
+  typingUsers: [],
   loading: false,
   mutedConversations: [],
 };
@@ -17,65 +17,48 @@ const chatSlice = createSlice({
     setConversations: (state, action) => {
       state.conversations = action.payload;
     },
+
     setActiveConversation: (state, action) => {
       state.activeConversation = action.payload;
-      // Clear messages and typing when switching conversations
-      state.messages = [];
       state.typingUsers = [];
+      // messages intentionally NOT cleared here — prevents the "erase" bug
     },
+
     setMessages: (state, action) => {
       state.messages = action.payload;
     },
 
-    /**
-     * Handles both:
-     *  - REST format:  { id, conversation, sender: { id, username, ... }, text, is_read, created_at }
-     *  - WS format:    { action:'receive_message', message_id, sender_id, text, created_at }
-     * Normalises to REST format so components only deal with one shape.
-     */
     addMessage: (state, action) => {
       const raw = action.payload;
 
-      // WS receive_message format → normalise to REST-like shape
       const normalized = raw.sender
-        ? raw  // Already REST shape (from API)
+        ? raw
         : {
             id: raw.message_id,
-            conversation: state.activeConversation,
-            sender: { id: raw.sender_id, username: null }, // username filled on render via onlineUsers
+            conversation: raw.conversation_id ?? state.activeConversation,
+            sender: { id: raw.sender_id, username: raw.sender_username || null },
             text: raw.text,
+            attachment_url: raw.attachment_url || null,
             is_read: false,
             is_delivered: true,
             created_at: raw.created_at,
-            _ws: true,  // flag so we can identify it later
-            reactions: [],
-            attachments: [],
+            temp_id: raw.temp_id || null,
+            _ws: true,
           };
 
-      // If server sent reactions/attachments in raw, preserve them
-      if (raw.reactions) normalized.reactions = raw.reactions;
-      if (raw.attachments) normalized.attachments = raw.attachments;
-
-      // Avoid duplicates (WS echo after optimistic add)
-      const exists = state.messages.some(
-        (m) => m.id === normalized.id && !m._pending
-      );
+      const exists = state.messages.some((m) => m.id === normalized.id && !m._pending);
       if (exists) return;
 
-      // Replace matching pending (optimistic) message
       const pendingIdx = normalized._pending
         ? -1
-        : state.messages.findIndex(
-            (m) => m._pending && m.text === normalized.text
-          );
+        : state.messages.findIndex((m) => m._pending && m.id === normalized.temp_id);
 
       if (pendingIdx !== -1) {
-        state.messages[pendingIdx] = normalized;
+        state.messages[pendingIdx] = { ...normalized, _pending: false };
       } else {
         state.messages.push(normalized);
       }
 
-      // Update last_message in conversations list
       const convIndex = state.conversations.findIndex(
         (c) => c.id === (normalized.conversation ?? state.activeConversation)
       );
@@ -84,26 +67,6 @@ const chatSlice = createSlice({
       }
     },
 
-    addReaction: (state, action) => {
-      const { message_id, emoji, user_id } = action.payload;
-      const msg = state.messages.find(m => String(m.id) === String(message_id));
-      if (!msg) return;
-      msg.reactions = msg.reactions || [];
-      // prevent duplicate from same user
-      const exists = msg.reactions.find(r => String(r.user?.id) === String(user_id) && r.emoji === emoji);
-      if (!exists) {
-        msg.reactions.push({ user: { id: user_id }, emoji });
-      }
-    },
-
-    removeReaction: (state, action) => {
-      const { message_id, emoji, user_id } = action.payload;
-      const msg = state.messages.find(m => String(m.id) === String(message_id));
-      if (!msg || !msg.reactions) return;
-      msg.reactions = msg.reactions.filter(r => !(String(r.user?.id) === String(user_id) && r.emoji === emoji));
-    },
-
-    /** Replace a pending optimistic message with the confirmed one from message_ack */
     confirmMessage: (state, action) => {
       const { temp_id, message_id, created_at } = action.payload;
       const idx = state.messages.findIndex((m) => m.id === temp_id);
@@ -115,6 +78,30 @@ const chatSlice = createSlice({
           _pending: false,
         };
       }
+    },
+
+    updateConversationPreview: (state, action) => {
+      const { conversationId, lastMessage, lastMessageTime } = action.payload;
+      const conv = state.conversations.find((c) => c.id === conversationId);
+      if (conv) {
+        conv.last_message = { text: lastMessage, created_at: lastMessageTime };
+      }
+      state.conversations.sort(
+        (a, b) => new Date(b.last_message?.created_at || 0) - new Date(a.last_message?.created_at || 0)
+      );
+    },
+
+    removeConversation: (state, action) => {
+      state.conversations = state.conversations.filter((c) => c.id !== action.payload);
+      if (state.activeConversation === action.payload) {
+        state.activeConversation = null;
+        state.messages = [];
+      }
+    },
+
+    toggleMuteConversation: (state, action) => {
+      const conv = state.conversations.find((c) => c.id === action.payload);
+      if (conv) conv.is_muted = !conv.is_muted;
     },
 
     setOnlineUsers: (state, action) => {
@@ -167,6 +154,9 @@ export const {
   setMessages,
   addMessage,
   confirmMessage,
+  updateConversationPreview,
+  removeConversation,
+  toggleMuteConversation,
   setOnlineUsers,
   addOnlineUser,
   removeOnlineUser,

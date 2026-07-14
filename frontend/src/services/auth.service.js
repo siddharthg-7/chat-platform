@@ -45,6 +45,10 @@ export const authService = {
       },
     });
     return response.data;
-  }
+  },
+  getUserById: async (userId) => {
+    const response = await api.get(`/accounts/users/${userId}/`);
+    return response.data;
+  },
 };
 

@@ -16,9 +16,10 @@ class AccountsAPITest(APITestCase):
         self.reset_password_url = reverse("reset_password")
         self.profile_url = reverse('profile')
         self.user_data = {
-            'username': 'testuser',
-            'password': 'testpassword123',
-            'email': 'test@example.com'
+             "username": "testuser",
+             "email": "test@example.com",
+             "password": "TestPassword@123",
+             "confirm_password": "TestPassword@123",
         }
 
     def test_signup(self):
@@ -39,7 +40,7 @@ class AccountsAPITest(APITestCase):
         response = self.client.post(self.login_url,
         {
             "username": "testuser",
-            "password": "testpassword123",
+            "password": "TestPassword@123",
         },
         content_type="application/json",
     )
@@ -81,7 +82,7 @@ class AccountsAPITest(APITestCase):
         login_response = self.client.post(self.login_url,
         {
             "username": "testuser",
-            "password": "testpassword123",
+            "password": "TestPassword@123",
         },
         content_type="application/json",
     )
@@ -111,7 +112,7 @@ class AccountsAPITest(APITestCase):
         login_response = self.client.post(self.login_url,
         {
             "username": "testuser",
-            "password": "testpassword123",
+            "password": "TestPassword@123",
         },
         content_type="application/json",
     )
@@ -142,7 +143,7 @@ class AccountsAPITest(APITestCase):
         login_response = self.client.post(self.login_url,
         {
             "username": "testuser",
-            "password": "testpassword123",
+            "password": "TestPassword@123",
         },
         content_type="application/json",
     )
@@ -177,7 +178,7 @@ class AccountsAPITest(APITestCase):
         login_response = self.client.post(self.login_url,
         {
             "username": "testuser",
-            "password": "testpassword123",
+            "password": "TestPassword@123",
         },
         content_type="application/json",
     )
@@ -190,7 +191,7 @@ class AccountsAPITest(APITestCase):
     # Change the account password.
         response = self.client.put(self.change_password_url,
         {
-            "old_password": "testpassword123",
+            "old_password": "TestPassword@123",
             "new_password": "TestPassword@456",
         },
         content_type="application/json",
@@ -221,7 +222,7 @@ class AccountsAPITest(APITestCase):
         login_response = self.client.post(self.login_url,
         {
             "username": "testuser",
-            "password": "testpassword123",
+            "password": "TestPassword@123",
         },
         content_type="application/json",
     )
