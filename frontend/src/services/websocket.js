@@ -7,7 +7,9 @@ import {
   updateMessageStatus,
   setTypingUser,
   clearTypingUser,
+  updateConversationPreview,
 } from '../store/slices/chatSlice';
+import { toast } from 'react-toastify';
 
 class WebSocketService {
   constructor() {
@@ -26,10 +28,10 @@ class WebSocketService {
       this.socket.readyState === WebSocket.OPEN &&
       this._currentConversationId === conversationId
     ) {
-      return; // Already connected to this conversation
+      return;
     }
 
-    this.disconnect(/* intentional */ false);
+    this.disconnect(false);
     this._currentConversationId = conversationId;
     this._intentionalClose = false;
 
@@ -52,12 +54,38 @@ class WebSocketService {
       }
 
       switch (data.action) {
-        case 'receive_message':
+        case 'receive_message': {
           store.dispatch(addMessage(data));
+
+          store.dispatch(
+            updateConversationPreview({
+              conversationId: data.conversation_id,
+              lastMessage: data.text || (data.attachment_url ? '📎 Attachment' : ''),
+              lastMessageTime: data.created_at,
+            })
+          );
+
+          const state = store.getState();
+          const isSelf = data.sender_id === state.auth.user?.id;
+          const isActiveChat = data.conversation_id === state.chat.activeConversation;
+          const isTabHidden = document.hidden;
+
+          if (!isSelf && (!isActiveChat || isTabHidden)) {
+            toast.info(`${data.sender_username || 'New message'}: ${data.text || '📎 Attachment'}`);
+
+            if (Notification.permission === 'granted') {
+              new Notification(data.sender_username || 'New message', {
+                body: data.text || 'Sent an attachment',
+                icon: '/logo.png',
+              });
+            } else if (Notification.permission !== 'denied') {
+              Notification.requestPermission();
+            }
+          }
           break;
+        }
 
         case 'message_ack':
-          // Sender receives this: replace optimistic message with confirmed
           store.dispatch(
             confirmMessage({
               temp_id: data.temp_id,
@@ -98,7 +126,6 @@ class WebSocketService {
       console.log('[WS] Disconnected');
       this.socket = null;
       if (!this._intentionalClose && this._currentConversationId) {
-        console.log('[WS] Reconnecting in', this.reconnectTimeout, 'ms...');
         setTimeout(() => {
           if (!this._intentionalClose) {
             this.connect(this._currentConversationId);
@@ -140,7 +167,7 @@ class WebSocketService {
   disconnect(intentional = true) {
     this._intentionalClose = intentional;
     if (this.socket) {
-      this.socket.onclose = null; // prevent reconnect handler
+      this.socket.onclose = null;
       this.socket.close();
       this.socket = null;
     }
