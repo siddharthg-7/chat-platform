@@ -40,7 +40,7 @@ class AccountsAPITest(APITestCase):
         response = self.client.post(self.login_url,
         {
             "username": "testuser",
-            "password": "testpassword123",
+            "password": "TestPassword@123",
         },
         content_type="application/json",
     )
@@ -82,7 +82,7 @@ class AccountsAPITest(APITestCase):
         login_response = self.client.post(self.login_url,
         {
             "username": "testuser",
-            "password": "testpassword123",
+            "password": "TestPassword@123",
         },
         content_type="application/json",
     )
@@ -112,7 +112,7 @@ class AccountsAPITest(APITestCase):
         login_response = self.client.post(self.login_url,
         {
             "username": "testuser",
-            "password": "testpassword123",
+            "password": "TestPassword@123",
         },
         content_type="application/json",
     )
@@ -143,7 +143,7 @@ class AccountsAPITest(APITestCase):
         login_response = self.client.post(self.login_url,
         {
             "username": "testuser",
-            "password": "testpassword123",
+            "password": "TestPassword@123",
         },
         content_type="application/json",
     )
@@ -178,7 +178,7 @@ class AccountsAPITest(APITestCase):
         login_response = self.client.post(self.login_url,
         {
             "username": "testuser",
-            "password": "testpassword123",
+            "password": "TestPassword@123",
         },
         content_type="application/json",
     )
@@ -191,7 +191,7 @@ class AccountsAPITest(APITestCase):
     # Change the account password.
         response = self.client.put(self.change_password_url,
         {
-            "old_password": "testpassword123",
+            "old_password": "TestPassword@123",
             "new_password": "TestPassword@456",
         },
         content_type="application/json",
@@ -222,7 +222,7 @@ class AccountsAPITest(APITestCase):
         login_response = self.client.post(self.login_url,
         {
             "username": "testuser",
-            "password": "testpassword123",
+            "password": "TestPassword@123",
         },
         content_type="application/json",
     )
