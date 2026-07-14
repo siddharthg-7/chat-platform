@@ -6,6 +6,8 @@ from .views import (
     ToggleMuteConversationView,
     MessageListView,
     SendMessageView,
+    MessageReactionView,
+    MutedConversationsView,
 )
 
 urlpatterns = [

@@ -100,17 +100,23 @@ else:
         }
     }
 if DEBUG:
+    # In DEBUG use in-memory channel layer to avoid local Redis network flakiness
     REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/0')
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
 else:
     REDIS_URL = os.environ['REDIS_URL']
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [REDIS_URL],
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [REDIS_URL],
+            },
         },
-    },
-}
+    }
 
 import sys
 if 'test' in sys.argv:

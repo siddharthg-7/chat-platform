@@ -1,4 +1,4 @@
-from django.db import models
+﻿from django.db import models
 from django.conf import settings
 
 
@@ -75,22 +75,33 @@ class Reaction(models.Model):
         return f"{self.user} reacted {self.emoji} to message {self.message.id}"
 
 
+# Legacy Mute model present in migrations (0005_mute). Keep a compat model
+# mapped to the same schema but avoid naming collisions with ConversationMute
+# related_name values.
 class Mute(models.Model):
-    """Per-user per-conversation mute setting."""
+    """Compatibility model for older migration-created table 'chat_mute'.
+
+    Note: keep this model so the ORM and migration history align while
+    ConversationMute is the preferred newer model. Use different related_name
+    values to avoid reverse accessor clashes.
+    """
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='mutes'
+        related_name='user_mutes'
     )
     conversation = models.ForeignKey(
         Conversation,
         on_delete=models.CASCADE,
-        related_name='mutes'
+        related_name='conversation_mutes'
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = 'chat_mute'
         unique_together = ('user', 'conversation')
 
     def __str__(self):
         return f"{self.user} muted conversation {self.conversation.id}"
+
+

@@ -3,16 +3,15 @@ import EmojiPicker from 'emoji-picker-react';
 import { Smile, Paperclip, Send } from "lucide-react";
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
-import EmojiPicker from 'emoji-picker-react';
 import { addMessage } from '@/store/slices/chatSlice';
 import { chatService } from '@/services/chat.service';
 import wsService from '@/services/websocket';
-import { chatService } from '@/services/chat.service';
 
 const MessageInput = () => {
   const [message, setMessage] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const dispatch = useDispatch();
   const { activeConversation } = useSelector((state) => state.chat);
   const { user } = useSelector((state) => state.auth);
@@ -61,7 +60,7 @@ const MessageInput = () => {
     }, 2000);
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!message.trim() || !activeConversation) return;
     const textToSend = message.trim();
     setMessage("");
