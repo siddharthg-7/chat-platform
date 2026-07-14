@@ -32,7 +32,7 @@ def create_conversation(user1, user2_id):
 
 
 def get_messages(conversation_id):
-    return Message.objects.filter(conversation_id=conversation_id)
+    return Message.objects.filter(conversation_id=conversation_id).order_by("created_at")
 def send_message(user, conversation_id, text, files=None):
     if not conversation_id:
         return None, "conversation is required"
@@ -57,3 +57,4 @@ def send_message(user, conversation_id, text, files=None):
 
     conversation.save()  # Update conversation updated_at
     return message, None
+    return Message.objects.filter(conversation_id=conversation_id).order_by("created_at")
