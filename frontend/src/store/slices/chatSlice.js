@@ -122,6 +122,14 @@ const chatSlice = createSlice({
       }
     },
 
+    updateMessageReactions: (state, action) => {
+      const { messageId, reactions } = action.payload;
+      const msg = state.messages.find((m) => m.id === messageId);
+      if (msg) {
+        msg.reactions = reactions;
+      }
+    },
+
     setTypingUser: (state, action) => {
       const userId = action.payload;
       if (!state.typingUsers.includes(userId)) {
@@ -147,6 +155,7 @@ export const {
   addOnlineUser,
   removeOnlineUser,
   updateMessageStatus,
+  updateMessageReactions,
   setTypingUser,
   clearTypingUser,
 } = chatSlice.actions;

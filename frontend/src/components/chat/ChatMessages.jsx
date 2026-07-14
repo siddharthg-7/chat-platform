@@ -45,9 +45,9 @@ const ChatMessages = () => {
             incoming: isIncoming,
             time: msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
             read: msg.is_read,
-            // 👇 FIX: this was never being passed through, so attachments had
             // no way to reach MessageBubble even once the upload itself worked.
             attachments: msg.attachments || [],
+            reactions: msg.reactions || [],
           };
 
           return (

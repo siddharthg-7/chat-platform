@@ -6,6 +6,7 @@ from .views import (
     ToggleMuteConversationView,
     MessageListView,
     SendMessageView,
+    ToggleReactionView,
 )
 
 urlpatterns = [
@@ -14,5 +15,6 @@ urlpatterns = [
     path("conversations/<int:conversation_id>/", ConversationDetailView.as_view(), name="conversation-detail"),
     path("conversations/<int:conversation_id>/mute/", ToggleMuteConversationView.as_view(), name="conversation-mute"),
     path("messages/<int:conversation_id>/", MessageListView.as_view(), name="message-list"),
+    path("messages/<int:message_id>/react/", ToggleReactionView.as_view(), name="toggle-reaction"),
     path("send/", SendMessageView.as_view(), name="send-message"),
 ]

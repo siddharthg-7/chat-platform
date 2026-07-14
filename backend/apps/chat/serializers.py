@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Conversation, Message, Attachment
+from .models import Conversation, Message, Attachment, ConversationMute, Reaction
 from apps.accounts.serializers import UserSerializer
 
 
@@ -9,13 +9,23 @@ class AttachmentSerializer(serializers.ModelSerializer):
         fields = ['id', 'file', 'created_at']
 
 
+class ReactionSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = Reaction
+        fields = ['id', 'user', 'username', 'emoji', 'created_at']
+        read_only_fields = ['id', 'user', 'created_at']
+
+
 class MessageSerializer(serializers.ModelSerializer):
     attachments = AttachmentSerializer(many=True, read_only=True)
+    reactions = ReactionSerializer(many=True, read_only=True)
     sender = UserSerializer(read_only=True)
 
     class Meta:
         model = Message
-        fields = ['id', 'conversation', 'sender', 'text', 'is_read', 'is_delivered', 'attachments', 'created_at']
+        fields = ['id', 'conversation', 'sender', 'text', 'is_read', 'is_delivered', 'attachments', 'reactions', 'created_at']
         read_only_fields = ['id', 'sender', 'is_read', 'is_delivered', 'created_at']
 
 

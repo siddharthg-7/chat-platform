@@ -6,8 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import CursorPagination
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
-from .models import Conversation, Message, Attachment, ConversationMute
-from .serializers import ConversationSerializer, MessageSerializer
+from .models import Conversation, Message, Attachment, ConversationMute, Reaction
+from .serializers import ConversationSerializer, MessageSerializer, ReactionSerializer
 from .services import create_conversation, get_messages, send_message
 
 User = get_user_model()
@@ -139,4 +139,28 @@ class SendMessageView(APIView):
         conversation.save()
 
         serializer = MessageSerializer(message)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ToggleReactionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, message_id):
+        emoji = request.data.get("emoji")
+        if not emoji:
+            return Response({"error": "emoji is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        message = get_object_or_404(Message, id=message_id)
+        
+        reaction, created = Reaction.objects.get_or_create(
+            message=message,
+            user=request.user,
+            emoji=emoji
+        )
+        
+        if not created:
+            reaction.delete()
+            return Response({"status": "removed"}, status=status.HTTP_200_OK)
+            
+        serializer = ReactionSerializer(reaction)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

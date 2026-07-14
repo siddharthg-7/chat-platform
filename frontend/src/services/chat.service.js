@@ -18,7 +18,8 @@ export const chatService = {
 
   getMessages: async (conversationId) => {
     const response = await api.get(`/chat/messages/${conversationId}/`);
-    return response.data.results ?? response.data;
+    const results = response.data.results ?? response.data;
+    return [...results].reverse();
   },
 
   sendMessage: async (conversationId, text = '', files = []) => {
@@ -30,9 +31,7 @@ export const chatService = {
       formData.append('files', file);
     });
 
-    const response = await api.post('/chat/send/', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+    const response = await api.post('/chat/send/', formData);
     return response.data;
   },
 
@@ -43,6 +42,11 @@ export const chatService = {
 
   toggleMute: async (conversationId) => {
     const response = await api.patch(`/chat/conversations/${conversationId}/mute/`);
+    return response.data;
+  },
+
+  toggleReaction: async (messageId, emoji) => {
+    const response = await api.post(`/chat/messages/${messageId}/react/`, { emoji });
     return response.data;
   },
 

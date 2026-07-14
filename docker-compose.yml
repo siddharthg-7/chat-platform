@@ -41,6 +41,8 @@ services:
       - "8000:8000"
     env_file:
       - backend/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
     command: >
       sh -c "mkdir -p /app/static /app/media && \
              chown -R django:django /app/static /app/media && \
