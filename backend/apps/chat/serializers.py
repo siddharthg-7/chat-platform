@@ -9,6 +9,14 @@ class AttachmentSerializer(serializers.ModelSerializer):
         fields = ['id', 'file', 'created_at']
 
 
+class ReactionSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Reaction
+        fields = ['id', 'user', 'emoji', 'created_at']
+
+
 class MessageSerializer(serializers.ModelSerializer):
     attachments = AttachmentSerializer(many=True, read_only=True)
     reactions = ReactionSerializer(many=True, read_only=True)
