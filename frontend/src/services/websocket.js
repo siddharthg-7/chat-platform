@@ -148,8 +148,8 @@ class WebSocketService {
     return false;
   }
 
-  sendMessage(text, tempId, attachmentUrl = null) {
-    return this.send({ action: 'send_message', text, temp_id: tempId, attachment_url: attachmentUrl });
+  sendMessage(text, tempId) {
+    return this.send({ action: 'send_message', text, temp_id: tempId });
   }
 
   sendTypingStart() {

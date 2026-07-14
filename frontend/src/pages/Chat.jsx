@@ -28,7 +28,6 @@ const Chat = () => {
     }).catch(console.error);
   }, [dispatch]);
 
-  // Fetch messages for active conversation — race-condition safe
   useEffect(() => {
     let isCurrent = true;
 

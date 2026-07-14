@@ -92,8 +92,6 @@ const MessageInput = () => {
     }
   };
 
-  // Attachments go through REST (chatService.sendMessage), not the socket —
-  // backend already returns the final saved message with a real id.
   const handleFileSelect = async (e) => {
     const file = e.target.files[0];
     e.target.value = null;

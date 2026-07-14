@@ -23,7 +23,7 @@ export const chatService = {
 
   sendMessage: async (conversationId, text = '', files = []) => {
     const formData = new FormData();
-    formData.append('conversation_id', conversationId); // fixed: was 'conversation'
+    formData.append('conversation_id', conversationId);
     if (text) formData.append('text', text);
 
     files.forEach(file => {
@@ -31,9 +31,7 @@ export const chatService = {
     });
 
     const response = await api.post('/chat/send/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+      headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
   },

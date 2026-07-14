@@ -13,9 +13,6 @@ from .services import create_conversation, get_messages, send_message
 User = get_user_model()
 
 
-# -------------------------
-# CONVERSATION LIST / CREATE
-# -------------------------
 class ConversationListView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -27,10 +24,7 @@ class ConversationListView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
-        conversation, error = create_conversation(
-            request.user,
-            request.data.get("user_id")
-        )
+        conversation, error = create_conversation(request.user, request.data.get("user_id"))
 
         if error:
             if error == "exists":
@@ -44,9 +38,6 @@ class ConversationListView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-# -------------------------
-# CREATE GROUP CONVERSATION
-# -------------------------
 class CreateGroupConversationView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -63,55 +54,36 @@ class CreateGroupConversationView(APIView):
         if members.count() != len(member_ids):
             return Response({"error": "One or more users not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        conversation = Conversation.objects.create(
-            is_group=True,
-            name=name,
-            admin=request.user,
-        )
+        conversation = Conversation.objects.create(is_group=True, name=name, admin=request.user)
         conversation.participants.add(request.user, *members)
 
         serializer = ConversationSerializer(conversation, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-# -------------------------
-# CONVERSATION DETAIL (DELETE)
-# -------------------------
 class ConversationDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, conversation_id):
         conversation = get_object_or_404(request.user.conversations, id=conversation_id)
         conversation.participants.remove(request.user)
-
         if conversation.participants.count() == 0:
             conversation.delete()
-
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# -------------------------
-# MUTE / UNMUTE
-# -------------------------
 class ToggleMuteConversationView(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, conversation_id):
         conversation = get_object_or_404(request.user.conversations, id=conversation_id)
-
-        mute, created = ConversationMute.objects.get_or_create(
-            conversation=conversation, user=request.user
-        )
+        mute, created = ConversationMute.objects.get_or_create(conversation=conversation, user=request.user)
         if not created:
             mute.delete()
             return Response({"is_muted": False})
-
         return Response({"is_muted": True})
 
 
-# -------------------------
-# MESSAGE LIST API
-# -------------------------
 class MessagePagination(CursorPagination):
     page_size = 50
     ordering = '-created_at'
@@ -131,9 +103,6 @@ class MessageListView(generics.ListAPIView):
             return Message.objects.none()
 
 
-# -------------------------
-# SEND MESSAGE API
-# -------------------------
 class SendMessageView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -162,16 +131,12 @@ class SendMessageView(APIView):
             if not file.name.lower().endswith(ALLOWED_EXTENSIONS):
                 return Response({"error": f"File {file.name} has unsupported type."}, status=status.HTTP_400_BAD_REQUEST)
 
-        message = Message.objects.create(
-            conversation=conversation,
-            sender=request.user,
-            text=text
-        )
+        message = Message.objects.create(conversation=conversation, sender=request.user, text=text)
 
         for file in files:
             Attachment.objects.create(message=message, file=file)
 
-        conversation.save()  # bump updated_at
+        conversation.save()
 
         serializer = MessageSerializer(message)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

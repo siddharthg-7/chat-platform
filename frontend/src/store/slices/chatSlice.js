@@ -20,8 +20,7 @@ const chatSlice = createSlice({
     setActiveConversation: (state, action) => {
       state.activeConversation = action.payload;
       state.typingUsers = [];
-      // NOTE: messages intentionally NOT cleared here — Chat.jsx handles
-      // loading state so the screen never flashes empty ("erase" bug fix)
+      // messages intentionally NOT cleared here — prevents the "erase" bug
     },
 
     setMessages: (state, action) => {
@@ -49,7 +48,6 @@ const chatSlice = createSlice({
       const exists = state.messages.some((m) => m.id === normalized.id && !m._pending);
       if (exists) return;
 
-      // Match optimistic message by temp_id (NOT text — fixes duplicate/wrong-message bug)
       const pendingIdx = normalized._pending
         ? -1
         : state.messages.findIndex((m) => m._pending && m.id === normalized.temp_id);
@@ -81,7 +79,6 @@ const chatSlice = createSlice({
       }
     },
 
-    // Keeps Dashboard + ChatSidebar in sync in real time
     updateConversationPreview: (state, action) => {
       const { conversationId, lastMessage, lastMessageTime } = action.payload;
       const conv = state.conversations.find((c) => c.id === conversationId);

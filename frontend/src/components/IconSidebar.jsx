@@ -88,7 +88,7 @@ const IconSidebar = () => {
       {/* Divider */}
       <div className={`${expanded ? 'w-[calc(100%-2rem)]' : 'w-8'} h-px bg-border mb-2 transition-all`} />
 
-      {/* Nav Items — takes all available space, pushes everything below to the bottom */}
+      {/* Nav Items */}
       <nav className={`flex-1 flex flex-col items-center gap-1 w-full ${expanded ? 'px-3' : 'px-2'}`}>
         {NAV_ITEMS.map(({ icon: Icon, label, to }) => {
           const active = isActive(to);
@@ -145,7 +145,7 @@ const IconSidebar = () => {
         )}
       </Link>
 
-      {/* Expand/Collapse Toggle — now the true last element, below avatar */}
+      {/* Expand/Collapse Toggle — true last element */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-8 h-8 mt-2 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-glass-hover transition-colors"

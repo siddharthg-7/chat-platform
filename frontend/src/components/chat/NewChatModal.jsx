@@ -7,13 +7,13 @@ import { chatService } from '@/services/chat.service';
 import { setConversations, setActiveConversation } from '@/store/slices/chatSlice';
 
 const NewChatModal = ({ onClose }) => {
-  const [mode, setMode] = useState('direct'); // 'direct' | 'group'
+  const [mode, setMode] = useState('direct');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [creating, setCreating] = useState(null);
 
-  const [selectedUsers, setSelectedUsers] = useState([]); // group mode
+  const [selectedUsers, setSelectedUsers] = useState([]);
   const [groupName, setGroupName] = useState('');
   const [creatingGroup, setCreatingGroup] = useState(false);
 
@@ -125,7 +125,6 @@ const NewChatModal = ({ onClose }) => {
           transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="w-full max-w-md mx-4 rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden"
         >
-          {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
             <h2 className="text-base font-semibold text-white">
               {mode === 'direct' ? 'New Conversation' : 'New Group'}
@@ -135,7 +134,6 @@ const NewChatModal = ({ onClose }) => {
             </button>
           </div>
 
-          {/* Mode toggle */}
           <div className="flex gap-2 px-4 pt-4">
             <button
               onClick={() => setMode('direct')}
@@ -151,7 +149,6 @@ const NewChatModal = ({ onClose }) => {
             </button>
           </div>
 
-          {/* Group name input */}
           {mode === 'group' && (
             <div className="px-4 pt-3">
               <input
@@ -163,7 +160,6 @@ const NewChatModal = ({ onClose }) => {
             </div>
           )}
 
-          {/* Selected chips (group mode) */}
           {mode === 'group' && selectedUsers.length > 0 && (
             <div className="flex flex-wrap gap-2 px-4 pt-3">
               {selectedUsers.map((u) => (
@@ -175,7 +171,6 @@ const NewChatModal = ({ onClose }) => {
             </div>
           )}
 
-          {/* Search */}
           <div className="px-4 pt-4">
             <div className="relative">
               {searching ? (
@@ -193,7 +188,6 @@ const NewChatModal = ({ onClose }) => {
             </div>
           </div>
 
-          {/* Results */}
           <div className="px-4 py-3 min-h-[120px] max-h-72 overflow-y-auto">
             {results.length === 0 && !searching && query.trim() && (
               <div className="flex flex-col items-center justify-center py-8 text-center text-slate-500">
@@ -240,7 +234,6 @@ const NewChatModal = ({ onClose }) => {
             })}
           </div>
 
-          {/* Create group button */}
           {mode === 'group' && (
             <div className="px-4 pb-4">
               <button
