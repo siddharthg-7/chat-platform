@@ -22,6 +22,7 @@ else:
 FRONTEND_URL = os.environ.get("FRONTEND_URL","http://localhost:3000")
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

@@ -1,9 +1,54 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { MoreVertical } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { toast } from 'react-toastify';
 import { Avatar } from "@/components/ui/Avatar";
+import { removeConversation, toggleMuteConversation } from '@/store/slices/chatSlice';
+import { chatService } from '@/services/chat.service';
 
 const ChatHeader = ({ chat }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleViewProfile = () => {
+    setMenuOpen(false);
+    if (chat.isGroup) navigate(`/group/${chat.id}/info`);
+    else navigate(`/profile/${chat.otherUserId}`);
+  };
+
+  const handleMute = async () => {
+    setMenuOpen(false);
+    try {
+      await chatService.toggleMute(chat.id);
+      dispatch(toggleMuteConversation(chat.id));
+      toast.success("Notifications muted");
+    } catch {
+      toast.error("Couldn't mute chat");
+    }
+  };
+
+  const handleDelete = async () => {
+    setMenuOpen(false);
+    if (!window.confirm(`Delete chat with ${chat.name}?`)) return;
+    try {
+      await chatService.deleteConversation(chat.id);
+      dispatch(removeConversation(chat.id));
+      toast.success("Chat deleted");
+    } catch {
+      toast.error("Couldn't delete chat");
+    }
+  };
 
   return (
     <header className="relative flex h-16 shrink-0 items-center justify-between border-b border-border bg-panel px-6">
@@ -18,7 +63,7 @@ const ChatHeader = ({ chat }) => {
         <div>
           <h2 className="font-semibold text-foreground">{chat.name}</h2>
           <p className="text-xs text-muted-foreground">
-            {chat.isGroup ? "12 members • 5 online" : chat.online ? "Online" : "Offline"}
+            {chat.isGroup ? "Group" : chat.online ? "Online" : "Offline"}
           </p>
         </div>
       </div>
@@ -31,14 +76,14 @@ const ChatHeader = ({ chat }) => {
       </button>
 
       {menuOpen && (
-        <div className="absolute right-6 top-16 z-10 w-44 rounded-xl border border-border bg-panel py-2 shadow-lg">
-          <button className="block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-glass" onClick={() => setMenuOpen(false)}>
+        <div ref={menuRef} className="absolute right-6 top-16 z-10 w-44 rounded-xl border border-border bg-panel py-2 shadow-lg">
+          <button className="block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-glass" onClick={handleViewProfile}>
             View profile
           </button>
-          <button className="block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-glass" onClick={() => setMenuOpen(false)}>
+          <button className="block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-glass" onClick={handleMute}>
             Mute notifications
           </button>
-          <button className="block w-full px-4 py-2 text-left text-sm text-rose-400 hover:bg-glass" onClick={() => setMenuOpen(false)}>
+          <button className="block w-full px-4 py-2 text-left text-sm text-rose-400 hover:bg-glass" onClick={handleDelete}>
             Delete chat
           </button>
         </div>

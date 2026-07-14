@@ -7,11 +7,30 @@ class Conversation(models.Model):
         settings.AUTH_USER_MODEL,
         related_name="conversations"
     )
+    is_group = models.BooleanField(default=False)
+    name = models.CharField(max_length=255, blank=True, null=True)  # group name only
+    admin = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="administered_groups"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Conversation {self.id}"
+        return self.name or f"Conversation {self.id}"
+
+
+class ConversationMute(models.Model):
+    """Per-user mute state — mute is personal, not shared across participants."""
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="mutes")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    muted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("conversation", "user")
 
 
 class Message(models.Model):

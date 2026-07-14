@@ -4,23 +4,26 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import CursorPagination
+from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
-from django.db.models import Count
-from .models import Conversation, Message, Attachment
+from .models import Conversation, Message, Attachment, ConversationMute
 from .serializers import ConversationSerializer, MessageSerializer
 from .services import create_conversation, get_messages, send_message
 
 User = get_user_model()
 
+
 # -------------------------
-# CONVERSATION API
+# CONVERSATION LIST / CREATE
 # -------------------------
 class ConversationListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        conversations = request.user.conversations.prefetch_related('participants', 'participants__profile').all()
-        serializer = ConversationSerializer(conversations, many=True)
+        conversations = request.user.conversations.prefetch_related(
+            'participants', 'participants__profile', 'mutes'
+        ).all()
+        serializer = ConversationSerializer(conversations, many=True, context={'request': request})
         return Response(serializer.data)
 
     def post(self, request):
@@ -31,21 +34,80 @@ class ConversationListView(APIView):
 
         if error:
             if error == "exists":
-                serializer = ConversationSerializer(conversation)
+                serializer = ConversationSerializer(conversation, context={'request': request})
                 return Response(serializer.data, status=status.HTTP_200_OK)
             if error == "User not found":
-                return Response(
-                    {"error": error},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+                return Response({"error": error}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response(
-                {"error": error},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        serializer = ConversationSerializer(conversation)
+        serializer = ConversationSerializer(conversation, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+# -------------------------
+# CREATE GROUP CONVERSATION
+# -------------------------
+class CreateGroupConversationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        name = request.data.get("name", "").strip()
+        member_ids = request.data.get("member_ids", [])
+
+        if not name:
+            return Response({"error": "Group name is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not isinstance(member_ids, list) or len(member_ids) < 2:
+            return Response({"error": "Select at least 2 members"}, status=status.HTTP_400_BAD_REQUEST)
+
+        members = User.objects.filter(id__in=member_ids)
+        if members.count() != len(member_ids):
+            return Response({"error": "One or more users not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        conversation = Conversation.objects.create(
+            is_group=True,
+            name=name,
+            admin=request.user,
+        )
+        conversation.participants.add(request.user, *members)
+
+        serializer = ConversationSerializer(conversation, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+# -------------------------
+# CONVERSATION DETAIL (DELETE)
+# -------------------------
+class ConversationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, conversation_id):
+        conversation = get_object_or_404(request.user.conversations, id=conversation_id)
+        conversation.participants.remove(request.user)
+
+        if conversation.participants.count() == 0:
+            conversation.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# -------------------------
+# MUTE / UNMUTE
+# -------------------------
+class ToggleMuteConversationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, conversation_id):
+        conversation = get_object_or_404(request.user.conversations, id=conversation_id)
+
+        mute, created = ConversationMute.objects.get_or_create(
+            conversation=conversation, user=request.user
+        )
+        if not created:
+            mute.delete()
+            return Response({"is_muted": False})
+
+        return Response({"is_muted": True})
+
 
 # -------------------------
 # MESSAGE LIST API
@@ -67,11 +129,13 @@ class MessageListView(generics.ListAPIView):
             return conversation.messages.select_related('sender', 'sender__profile').prefetch_related('attachments').all()
         except Conversation.DoesNotExist:
             return Message.objects.none()
+
+
 # -------------------------
 # SEND MESSAGE API
 # -------------------------
 class SendMessageView(APIView):
-    permission_classes = [IsAuthenticated]  # This is our critical security fix!
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         conversation_id = request.data.get("conversation_id")
@@ -89,10 +153,9 @@ class SendMessageView(APIView):
         if not text and not files:
             return Response({"error": "Message text or file is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # File validation
         ALLOWED_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.gif', '.pdf', '.doc', '.docx', '.txt')
-        MAX_FILE_SIZE = 5 * 1024 * 1024 # 5 MB
-        
+        MAX_FILE_SIZE = 5 * 1024 * 1024
+
         for file in files:
             if file.size > MAX_FILE_SIZE:
                 return Response({"error": f"File {file.name} exceeds 5MB limit."}, status=status.HTTP_400_BAD_REQUEST)
@@ -108,8 +171,7 @@ class SendMessageView(APIView):
         for file in files:
             Attachment.objects.create(message=message, file=file)
 
-        # Update conversation updated_at
-        conversation.save()
+        conversation.save()  # bump updated_at
 
         serializer = MessageSerializer(message)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

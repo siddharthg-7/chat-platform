@@ -66,7 +66,8 @@ const IconSidebar = () => {
     <aside
       style={{ width: expanded ? '240px' : '64px' }}
       className="
-        flex-shrink-0 h-full
+        flex-shrink-0
+        h-screen sticky top-0
         flex flex-col items-center
         py-4 gap-1
         bg-panel
@@ -87,7 +88,7 @@ const IconSidebar = () => {
       {/* Divider */}
       <div className={`${expanded ? 'w-[calc(100%-2rem)]' : 'w-8'} h-px bg-border mb-2 transition-all`} />
 
-      {/* Nav Items */}
+      {/* Nav Items — takes all available space, pushes everything below to the bottom */}
       <nav className={`flex-1 flex flex-col items-center gap-1 w-full ${expanded ? 'px-3' : 'px-2'}`}>
         {NAV_ITEMS.map(({ icon: Icon, label, to }) => {
           const active = isActive(to);
@@ -106,13 +107,10 @@ const IconSidebar = () => {
                   }
                 `}
               >
-                {/* Active left pill (only visible when collapsed) */}
                 {active && !expanded && (
                   <span className="absolute -left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-accent" />
                 )}
-
                 <Icon className="h-4.5 w-4.5 shrink-0" size={18} />
-
                 {expanded && (
                   <span className="ml-3 font-medium text-sm whitespace-nowrap">
                     {label}
@@ -123,14 +121,6 @@ const IconSidebar = () => {
           );
         })}
       </nav>
-
-      {/* Expand/Collapse Toggle */}
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-glass-hover transition-colors mb-2"
-      >
-        {expanded ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
-      </button>
 
       {/* Divider */}
       <div className={`${expanded ? 'w-[calc(100%-2rem)]' : 'w-8'} h-px bg-border mb-2 transition-all`} />
@@ -144,7 +134,6 @@ const IconSidebar = () => {
               fallback={initials}
               className="h-9 w-9 ring-2 ring-transparent hover:ring-accent transition-all duration-200 bg-accent text-white font-semibold"
             />
-            {/* Online dot */}
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-panel" />
           </div>
         </Tooltip>
@@ -155,6 +144,14 @@ const IconSidebar = () => {
           </div>
         )}
       </Link>
+
+      {/* Expand/Collapse Toggle — now the true last element, below avatar */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-8 h-8 mt-2 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-glass-hover transition-colors"
+      >
+        {expanded ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+      </button>
     </aside>
   );
 };

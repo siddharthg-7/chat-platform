@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
 import { chatService } from '../services/chat.service';
 import wsService from '../services/websocket';
 import { setConversations, setMessages, setActiveConversation } from '../store/slices/chatSlice';
@@ -15,6 +16,7 @@ const Chat = () => {
 
   const [chatListWidth, setChatListWidth] = useState(360);
   const [isDragging, setIsDragging] = useState(false);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -26,16 +28,29 @@ const Chat = () => {
     }).catch(console.error);
   }, [dispatch]);
 
+  // Fetch messages for active conversation — race-condition safe
   useEffect(() => {
+    let isCurrent = true;
+
     if (activeConversation) {
-      chatService.getMessages(activeConversation).then((data) => {
-        dispatch(setMessages(data));
-      }).catch(console.error);
+      setMessagesLoading(true);
+      chatService.getMessages(activeConversation)
+        .then((data) => {
+          if (isCurrent) dispatch(setMessages(data));
+        })
+        .catch((err) => {
+          console.error(err);
+          if (isCurrent) toast.error("Couldn't load messages. Try again.");
+        })
+        .finally(() => {
+          if (isCurrent) setMessagesLoading(false);
+        });
 
       wsService.connect(activeConversation);
     }
-    
+
     return () => {
+      isCurrent = false;
       wsService.disconnect();
     };
   }, [activeConversation, dispatch]);
@@ -86,7 +101,7 @@ const Chat = () => {
         </div>
 
         <div className="flex-1 min-w-0 h-full overflow-hidden">
-          <ChatArea />
+          <ChatArea messagesLoading={messagesLoading} />
         </div>
       </div>
     </div>

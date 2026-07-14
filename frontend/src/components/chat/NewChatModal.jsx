@@ -1,15 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, User, Loader2 } from 'lucide-react';
+import { Search, X, User, Loader2, Users, Check } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
 import { chatService } from '@/services/chat.service';
 import { setConversations, setActiveConversation } from '@/store/slices/chatSlice';
 
 const NewChatModal = ({ onClose }) => {
+  const [mode, setMode] = useState('direct'); // 'direct' | 'group'
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
-  const [creating, setCreating] = useState(null); // user id being created
+  const [creating, setCreating] = useState(null);
+
+  const [selectedUsers, setSelectedUsers] = useState([]); // group mode
+  const [groupName, setGroupName] = useState('');
+  const [creatingGroup, setCreatingGroup] = useState(false);
 
   const dispatch = useDispatch();
   const { conversations } = useSelector((state) => state.chat);
@@ -17,12 +23,10 @@ const NewChatModal = ({ onClose }) => {
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
 
-  // Auto-focus search input on open
   useEffect(() => {
     inputRef.current?.focus();
-  }, []);
+  }, [mode]);
 
-  // Debounced search
   useEffect(() => {
     clearTimeout(debounceRef.current);
     if (!query.trim()) {
@@ -43,12 +47,19 @@ const NewChatModal = ({ onClose }) => {
   }, [query]);
 
   const handleSelectUser = async (user) => {
+    if (mode === 'group') {
+      setSelectedUsers((prev) =>
+        prev.some((u) => u.id === user.id)
+          ? prev.filter((u) => u.id !== user.id)
+          : [...prev, user]
+      );
+      return;
+    }
+
     if (creating) return;
 
-    // Check if a conversation with this user already exists
     const existing = conversations.find((c) =>
-      !c.is_group &&
-      c.participants?.some((p) => p.id === user.id)
+      !c.is_group && c.participants?.some((p) => p.id === user.id)
     );
     if (existing) {
       dispatch(setActiveConversation(existing.id));
@@ -64,13 +75,39 @@ const NewChatModal = ({ onClose }) => {
       onClose();
     } catch (err) {
       console.error('[NewChatModal] createConversation error', err);
-      alert('Could not start chat. Please try again.');
+      toast.error('Could not start chat. Please try again.');
     } finally {
       setCreating(null);
     }
   };
 
-  // Close on backdrop click
+  const handleCreateGroup = async () => {
+    if (selectedUsers.length < 2) {
+      toast.error("Select at least 2 people for a group");
+      return;
+    }
+    if (!groupName.trim()) {
+      toast.error("Give your group a name");
+      return;
+    }
+    setCreatingGroup(true);
+    try {
+      const newGroup = await chatService.createGroup({
+        name: groupName.trim(),
+        member_ids: selectedUsers.map((u) => u.id),
+      });
+      dispatch(setConversations([...conversations, newGroup]));
+      dispatch(setActiveConversation(newGroup.id));
+      toast.success("Group created!");
+      onClose();
+    } catch (err) {
+      console.error('[NewChatModal] createGroup error', err);
+      toast.error('Could not create group. Please try again.');
+    } finally {
+      setCreatingGroup(false);
+    }
+  };
+
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) onClose();
   };
@@ -90,14 +127,53 @@ const NewChatModal = ({ onClose }) => {
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-            <h2 className="text-base font-semibold text-white">New Conversation</h2>
-            <button
-              onClick={onClose}
-              className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-800 hover:text-white"
-            >
+            <h2 className="text-base font-semibold text-white">
+              {mode === 'direct' ? 'New Conversation' : 'New Group'}
+            </h2>
+            <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-800 hover:text-white">
               <X size={16} />
             </button>
           </div>
+
+          {/* Mode toggle */}
+          <div className="flex gap-2 px-4 pt-4">
+            <button
+              onClick={() => setMode('direct')}
+              className={`flex-1 rounded-xl py-2 text-xs font-medium transition ${mode === 'direct' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+            >
+              Direct Message
+            </button>
+            <button
+              onClick={() => setMode('group')}
+              className={`flex-1 rounded-xl py-2 text-xs font-medium transition flex items-center justify-center gap-1.5 ${mode === 'group' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+            >
+              <Users size={13} /> Group
+            </button>
+          </div>
+
+          {/* Group name input */}
+          {mode === 'group' && (
+            <div className="px-4 pt-3">
+              <input
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                placeholder="Group name…"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 px-4 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-emerald-500"
+              />
+            </div>
+          )}
+
+          {/* Selected chips (group mode) */}
+          {mode === 'group' && selectedUsers.length > 0 && (
+            <div className="flex flex-wrap gap-2 px-4 pt-3">
+              {selectedUsers.map((u) => (
+                <span key={u.id} className="flex items-center gap-1 rounded-full bg-emerald-600/20 text-emerald-400 text-xs px-2.5 py-1">
+                  {u.username}
+                  <X size={12} className="cursor-pointer" onClick={() => setSelectedUsers((prev) => prev.filter((x) => x.id !== u.id))} />
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Search */}
           <div className="px-4 pt-4">
@@ -127,40 +203,56 @@ const NewChatModal = ({ onClose }) => {
             )}
 
             {results.length === 0 && !query.trim() && (
-              <p className="text-center text-sm text-slate-600 py-8">
-                Type a username to search
-              </p>
+              <p className="text-center text-sm text-slate-600 py-8">Type a username to search</p>
             )}
 
-            {results.map((user) => (
-              <button
-                key={user.id}
-                onClick={() => handleSelectUser(user)}
-                disabled={creating === user.id}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-slate-800 disabled:opacity-60"
-              >
-                {/* Avatar */}
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white">
-                  {user.username.substring(0, 2).toUpperCase()}
-                </div>
+            {results.map((user) => {
+              const isSelected = selectedUsers.some((u) => u.id === user.id);
+              return (
+                <button
+                  key={user.id}
+                  onClick={() => handleSelectUser(user)}
+                  disabled={creating === user.id}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-slate-800 disabled:opacity-60"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white">
+                    {user.username.substring(0, 2).toUpperCase()}
+                  </div>
 
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{user.username}</p>
-                  {(user.first_name || user.last_name) && (
-                    <p className="text-xs text-slate-400 truncate">
-                      {[user.first_name, user.last_name].filter(Boolean).join(' ')}
-                    </p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{user.username}</p>
+                    {(user.first_name || user.last_name) && (
+                      <p className="text-xs text-slate-400 truncate">
+                        {[user.first_name, user.last_name].filter(Boolean).join(' ')}
+                      </p>
+                    )}
+                  </div>
+
+                  {mode === 'group' ? (
+                    isSelected && <Check size={16} className="shrink-0 text-emerald-500" />
+                  ) : creating === user.id ? (
+                    <Loader2 size={15} className="shrink-0 animate-spin text-emerald-500" />
+                  ) : (
+                    <span className="shrink-0 text-xs text-slate-500">Chat</span>
                   )}
-                </div>
-
-                {creating === user.id ? (
-                  <Loader2 size={15} className="shrink-0 animate-spin text-emerald-500" />
-                ) : (
-                  <span className="shrink-0 text-xs text-slate-500">Chat</span>
-                )}
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
+
+          {/* Create group button */}
+          {mode === 'group' && (
+            <div className="px-4 pb-4">
+              <button
+                onClick={handleCreateGroup}
+                disabled={creatingGroup || selectedUsers.length < 2 || !groupName.trim()}
+                className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {creatingGroup ? <Loader2 size={15} className="animate-spin" /> : <Users size={15} />}
+                Create Group ({selectedUsers.length} selected)
+              </button>
+            </div>
+          )}
         </motion.div>
       </AnimatePresence>
     </div>
