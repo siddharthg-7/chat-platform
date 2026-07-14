@@ -16,9 +16,10 @@ class AccountsAPITest(APITestCase):
         self.reset_password_url = reverse("reset_password")
         self.profile_url = reverse('profile')
         self.user_data = {
-            'username': 'testuser',
-            'password': 'testpassword123',
-            'email': 'test@example.com'
+             "username": "testuser",
+             "email": "test@example.com",
+             "password": "TestPassword@123",
+             "confirm_password": "TestPassword@123",
         }
 
     def test_signup(self):
