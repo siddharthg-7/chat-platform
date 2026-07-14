@@ -1,5 +1,4 @@
-# Real-Time Chat Platform
-
+# One to One Chat Platform
 This is the foundational boilerplate for a scalable, production-ready Real-Time Chat Platform designed for a team of 27 developers. 
 
 ## Project Architecture
