@@ -67,6 +67,14 @@ class WebSocketService {
           );
           break;
 
+        case 'reaction_added':
+          store.dispatch({ type: 'chat/addReaction', payload: { message_id: data.message_id, emoji: data.emoji, user_id: data.user_id } });
+          break;
+
+        case 'reaction_removed':
+          store.dispatch({ type: 'chat/removeReaction', payload: { message_id: data.message_id, emoji: data.emoji, user_id: data.user_id } });
+          break;
+
         case 'user_online':
           store.dispatch(addOnlineUser(data.user_id));
           break;

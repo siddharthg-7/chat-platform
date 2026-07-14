@@ -16,6 +16,11 @@ export const chatService = {
     return response.data.results ?? response.data;
   },
 
+  deleteConversation: async (conversationId) => {
+    const response = await api.delete(`/chat/conversations/${conversationId}/`);
+    return response.status === 204;
+  },
+
   sendMessage: async (conversationId, text = '', files = []) => {
     const formData = new FormData();
     formData.append('conversation', conversationId);
@@ -35,6 +40,36 @@ export const chatService = {
 
   searchUsers: async (query) => {
     const response = await api.get('/accounts/users/search/', { params: { q: query } });
+    return response.data;
+  },
+
+  addReaction: async (messageId, emoji) => {
+    const response = await api.post(`/chat/messages/${messageId}/reactions/`, { emoji });
+    return response.data;
+  },
+
+  removeReaction: async (messageId, emoji) => {
+    const response = await api.delete(`/chat/messages/${messageId}/reactions/`, { data: { emoji } });
+    return response.data;
+  },
+
+  getMutedConversations: async () => {
+    const response = await api.get('/chat/muted/');
+    return response.data.muted || [];
+  },
+
+  muteConversation: async (conversationId) => {
+    const response = await api.post('/chat/muted/', { conversation_id: conversationId });
+    return response.data;
+  },
+
+  unmuteConversation: async (conversationId) => {
+    const response = await api.delete('/chat/muted/', { data: { conversation_id: conversationId } });
+    return response.status === 204;
+  },
+
+  getUser: async (userId) => {
+    const response = await api.get(`/accounts/users/${userId}/`);
     return response.data;
   },
 };

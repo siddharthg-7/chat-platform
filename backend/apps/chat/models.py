@@ -48,3 +48,46 @@ class Attachment(models.Model):
     )
     file = models.FileField(upload_to="attachments/")
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Reaction(models.Model):
+    """Represents a reaction (emoji) applied by a user to a message."""
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name="reactions"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="reactions"
+    )
+    emoji = models.CharField(max_length=8)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('message', 'user', 'emoji')
+
+    def __str__(self):
+        return f"{self.user} reacted {self.emoji} to message {self.message.id}"
+
+
+class Mute(models.Model):
+    """Per-user per-conversation mute setting."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='mutes'
+    )
+    conversation = models.ForeignKey(
+        Conversation,
+        on_delete=models.CASCADE,
+        related_name='mutes'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'conversation')
+
+    def __str__(self):
+        return f"{self.user} muted conversation {self.conversation.id}"

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -16,7 +16,11 @@ const DEFAULT_COVER_GRADIENT = 'linear-gradient(to bottom right, #10b981, #04785
 const Profile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useSelector((state) => state.auth);
+
+  const viewedUser = location.state?.user;
+  const isViewingOther = Boolean(viewedUser && viewedUser.id && String(viewedUser.id) !== String(user?.id));
 
   const [form, setForm] = useState({
     first_name: '',
@@ -42,6 +46,101 @@ const Profile = () => {
       });
     }
   }, [user]);
+
+  // If viewing another user's profile passed in location state, render a read-only placeholder
+  if (isViewingOther) {
+    const other = viewedUser;
+    const getAvatarUrlFor = (u) => {
+      if (!u) return null;
+      if (u.profile?.avatar) {
+        return u.profile.avatar.startsWith('http') ? u.profile.avatar : `${import.meta.env.VITE_API_URL || ''}${u.profile.avatar}`;
+      }
+      return null;
+    };
+
+    return (
+      <div className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-surface)]">
+        <div className="max-w-5xl mx-auto p-6 lg:p-8 space-y-8">
+          <div className="relative">
+            <div className="h-52 w-full rounded-2xl overflow-hidden relative">
+              <div className="absolute inset-0" style={{ background: DEFAULT_COVER_GRADIENT }} />
+            </div>
+
+            <div className="absolute -bottom-14 left-6 flex items-end gap-4">
+              <div className="relative">
+                <Avatar
+                  src={getAvatarUrlFor(other)}
+                  fallback={other.username?.substring(0, 2).toUpperCase()}
+                  className="h-28 w-28 border-4 border-[var(--bg-surface)] shadow-md bg-[var(--accent)] font-bold text-white text-xl"
+                />
+              </div>
+
+              <div className="mb-0">
+                <h1 className="text-xl font-bold text-white">{[other.first_name, other.last_name].filter(Boolean).join(' ') || other.username}</h1>
+                <p className="text-sm text-[var(--text-muted)]">@{other.username}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-16">
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base text-black dark:text-white">About</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-[13px] text-[var(--text-muted)] leading-relaxed min-h-[40px]">{other.profile?.bio || 'No bio provided.'}</p>
+                  <div className="space-y-2.5 pt-4 border-t border-[var(--border)]">
+                    <div className="flex items-center gap-2.5 text-[13px] text-[var(--text-muted)]">
+                      <Mail className="h-3.5 w-3.5 text-[var(--text-muted)] shrink-0" />
+                      <span className="truncate">{other.email || 'No email address'}</span>
+                    </div>
+                    <div className="flex items-center gap-2.5 text-[13px] text-[var(--text-muted)]">
+                      <Calendar className="h-3.5 w-3.5 text-[var(--text-muted)] shrink-0" />
+                      <span>Member since {other.created_at ? new Date(other.created_at).toLocaleDateString([], { month: 'long', year: 'numeric' }) : 'Unknown'}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="md:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Profile</CardTitle>
+                  <CardDescription>This profile is read-only.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">First Name</label>
+                        <Input value={other.first_name || ''} disabled />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Last Name</label>
+                        <Input value={other.last_name || ''} disabled />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Email Address</label>
+                      <Input type="email" value={other.email || ''} disabled />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Bio</label>
+                      <textarea value={other.profile?.bio || ''} disabled className="flex min-h-[100px] w-full rounded-xl border border-[var(--border)] bg-[var(--bg-glass)] px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] resize-none" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

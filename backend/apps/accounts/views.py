@@ -265,3 +265,10 @@ class UserSearchView(APIView):
         )
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
+
+
+class UserDetailView(generics.RetrieveAPIView):
+    """Return public profile information for a user by id."""
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+    queryset = User.objects.select_related('profile').all()

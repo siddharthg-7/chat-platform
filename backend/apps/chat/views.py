@@ -9,6 +9,8 @@ from django.db.models import Count
 from .models import Conversation, Message, Attachment
 from .serializers import ConversationSerializer, MessageSerializer
 from .services import create_conversation, get_messages, send_message
+from apps.notifications.models import Notification
+from django.shortcuts import get_object_or_404
 
 User = get_user_model()
 
@@ -111,5 +113,139 @@ class SendMessageView(APIView):
         # Update conversation updated_at
         conversation.save()
 
+        # Create notifications for other participants (exclude sender)
+        try:
+            participants = conversation.participants.exclude(id=request.user.id)
+            preview = (text or '')[:200]
+            for p in participants:
+                Notification.objects.create(
+                    user=p,
+                    type='message',
+                    content=f"New message from {request.user.username}: {preview}"
+                )
+        except Exception:
+            # Do not fail the request if notification creation fails
+            pass
+
         serializer = MessageSerializer(message)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ConversationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, conversation_id):
+        conversation = get_object_or_404(Conversation, id=conversation_id)
+        # Only allow deletion if user is a participant
+        if not conversation.participants.filter(id=request.user.id).exists():
+            return Response({"error": "Not found or not allowed"}, status=status.HTTP_404_NOT_FOUND)
+        conversation.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MessageReactionView(APIView):
+    """POST to add a reaction, DELETE to remove. Body must include 'emoji'."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, message_id):
+        emoji = request.data.get('emoji')
+        if not emoji:
+            return Response({"error": "emoji is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            message = Message.objects.select_related('conversation').get(id=message_id)
+        except Message.DoesNotExist:
+            return Response({"error": "Message not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check user is participant
+        if not message.conversation.participants.filter(id=request.user.id).exists():
+            return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+
+        reaction, created = Reaction.objects.get_or_create(message=message, user=request.user, emoji=emoji)
+
+        # Broadcast via channel layer so connected clients get the update
+        try:
+            from asgiref.sync import async_to_sync
+            from channels.layers import get_channel_layer
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'chat_{message.conversation.id}',
+                {
+                    'type': 'reaction_event',
+                    'action': 'reaction_added',
+                    'message_id': message.id,
+                    'emoji': emoji,
+                    'user_id': request.user.id,
+                }
+            )
+        except Exception:
+            pass
+
+        serializer = MessageSerializer(message)
+        return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    def delete(self, request, message_id):
+        emoji = request.data.get('emoji')
+        if not emoji:
+            return Response({"error": "emoji is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            message = Message.objects.select_related('conversation').get(id=message_id)
+        except Message.DoesNotExist:
+            return Response({"error": "Message not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not message.conversation.participants.filter(id=request.user.id).exists():
+            return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+
+        Reaction.objects.filter(message=message, user=request.user, emoji=emoji).delete()
+
+        # Broadcast removal
+        try:
+            from asgiref.sync import async_to_sync
+            from channels.layers import get_channel_layer
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'chat_{message.conversation.id}',
+                {
+                    'type': 'reaction_event',
+                    'action': 'reaction_removed',
+                    'message_id': message.id,
+                    'emoji': emoji,
+                    'user_id': request.user.id,
+                }
+            )
+        except Exception:
+            pass
+
+        serializer = MessageSerializer(message)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class MutedConversationsView(APIView):
+    """GET returns list of muted conversation ids for the user.
+       POST with {'conversation_id': id} to mute. DELETE with {'conversation_id': id} to unmute.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        mutes = request.user.mutes.all()
+        data = [m.conversation.id for m in mutes]
+        return Response({'muted': data})
+
+    def post(self, request):
+        conv_id = request.data.get('conversation_id')
+        if not conv_id:
+            return Response({'error': 'conversation_id required'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            conv = Conversation.objects.get(id=conv_id)
+        except Conversation.DoesNotExist:
+            return Response({'error': 'conversation not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not conv.participants.filter(id=request.user.id).exists():
+            return Response({'error': 'not allowed'}, status=status.HTTP_403_FORBIDDEN)
+        m, created = Mute.objects.get_or_create(user=request.user, conversation=conv)
+        return Response({'muted': conv_id}, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    def delete(self, request):
+        conv_id = request.data.get('conversation_id')
+        if not conv_id:
+            return Response({'error': 'conversation_id required'}, status=status.HTTP_400_BAD_REQUEST)
+        Mute.objects.filter(user=request.user, conversation_id=conv_id).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

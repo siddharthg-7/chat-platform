@@ -20,14 +20,16 @@ const ChatArea = () => {
   const isOnline = otherParticipant ? onlineUsers.includes(otherParticipant.id) : false;
 
   const mappedChat = {
+    id: chat?.id,
     name: contactName,
     online: isOnline,
     avatar: null,
+    participant: otherParticipant,
   };
 
   return (
     <section className="flex h-full w-full flex-col bg-base">
-      <ChatHeader chat={mappedChat} />
+      <ChatHeader chat={mappedChat} conversationId={activeConversation} />
       <ChatMessages />
       <MessageInput />
     </section>

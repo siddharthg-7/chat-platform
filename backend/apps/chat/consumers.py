@@ -2,7 +2,9 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
-from .models import Conversation, Message
+from .models import Conversation, Message, Reaction
+from apps.notifications.models import Notification
+
 
 User = get_user_model()
 
@@ -105,6 +107,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         'created_at': str(message.created_at)
                     }
                 )
+
+                # Send live notification events to other participants (if connected)
+                try:
+                    conv = await database_sync_to_async(Conversation.objects.get)(id=self.conversation_id)
+                    participants = await database_sync_to_async(lambda: list(conv.participants.exclude(id=self.user.id)) )()
+                    preview = (message.text or '')[:200]
+                    for p in participants:
+                        await self.channel_layer.group_send(
+                            f'user_{p.id}',
+                            {
+                                'type': 'notify_user',
+                                'content': f"New message from {self.user.username}: {preview}",
+                                'notify_type': 'message'
+                            }
+                        )
+                except Exception:
+                    pass
         elif action in ['typing_start', 'typing_stop']:
             await self.channel_layer.group_send(
                 self.room_group_name,
@@ -126,6 +145,36 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'reader_id': self.user.id
                 }
             )
+        elif action == 'react':
+            # react action expects: { action: 'react', message_id, emoji, remove: true|false }
+            message_id = data.get('message_id')
+            emoji = data.get('emoji')
+            remove = data.get('remove', False)
+            if message_id and emoji:
+                if remove:
+                    await self.remove_reaction(message_id, self.user.id, emoji)
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
+                            'type': 'reaction_event',
+                            'action': 'reaction_removed',
+                            'message_id': message_id,
+                            'emoji': emoji,
+                            'user_id': self.user.id
+                        }
+                    )
+                else:
+                    await self.save_reaction(message_id, self.user.id, emoji)
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
+                            'type': 'reaction_event',
+                            'action': 'reaction_added',
+                            'message_id': message_id,
+                            'emoji': emoji,
+                            'user_id': self.user.id
+                        }
+                    )
         elif action == 'ping':
             await self.send(text_data=json.dumps({'action': 'pong'}))
 
@@ -153,6 +202,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message_id': event['message_id'],
                 'reader_id': event['reader_id']
             }))
+
+    async def notify_user(self, event):
+        # Receive server-side notification events targeted at a user
+        await self.send(text_data=json.dumps({
+            'action': 'notification',
+            'type': event.get('notify_type', event.get('type', 'message')),
+            'content': event.get('content')
+        }))
+
+    async def reaction_event(self, event):
+        # Broadcast reaction add/remove to clients
+        await self.send(text_data=json.dumps({
+            'action': event.get('action'),
+            'message_id': event.get('message_id'),
+            'emoji': event.get('emoji'),
+            'user_id': event.get('user_id')
+        }))
 
     async def broadcast_presence(self, action):
         # We broadcast to the room so participants know we are online/offline
@@ -182,11 +248,42 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def save_message(self, conversation_id, sender_id, text):
-        return Message.objects.create(
+        message = Message.objects.create(
             conversation_id=conversation_id,
             sender_id=sender_id,
             text=text
         )
+
+        # Create notifications for other participants (best-effort)
+        try:
+            conv = Conversation.objects.get(id=conversation_id)
+            participants = conv.participants.exclude(id=sender_id)
+            preview = (text or '')[:200]
+            for p in participants:
+                Notification.objects.create(
+                    user=p,
+                    type='message',
+                    content=f"New message from {message.sender.username}: {preview}"
+                )
+        except Exception:
+            pass
+
+        return message
+
+    @database_sync_to_async
+    def save_reaction(self, message_id, user_id, emoji):
+        try:
+            msg = Message.objects.get(id=message_id)
+            Reaction.objects.get_or_create(message=msg, user_id=user_id, emoji=emoji)
+        except Exception:
+            pass
+
+    @database_sync_to_async
+    def remove_reaction(self, message_id, user_id, emoji):
+        try:
+            Reaction.objects.filter(message_id=message_id, user_id=user_id, emoji=emoji).delete()
+        except Exception:
+            pass
 
     @database_sync_to_async
     def mark_message_read(self, message_id):

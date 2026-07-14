@@ -7,6 +7,7 @@ const initialState = {
   onlineUsers: [],
   typingUsers: [],   // user IDs currently typing in active conversation
   loading: false,
+  mutedConversations: [],
 };
 
 const chatSlice = createSlice({
@@ -37,7 +38,7 @@ const chatSlice = createSlice({
 
       // WS receive_message format → normalise to REST-like shape
       const normalized = raw.sender
-        ? raw  // Already REST shape
+        ? raw  // Already REST shape (from API)
         : {
             id: raw.message_id,
             conversation: state.activeConversation,
@@ -47,7 +48,13 @@ const chatSlice = createSlice({
             is_delivered: true,
             created_at: raw.created_at,
             _ws: true,  // flag so we can identify it later
+            reactions: [],
+            attachments: [],
           };
+
+      // If server sent reactions/attachments in raw, preserve them
+      if (raw.reactions) normalized.reactions = raw.reactions;
+      if (raw.attachments) normalized.attachments = raw.attachments;
 
       // Avoid duplicates (WS echo after optimistic add)
       const exists = state.messages.some(
@@ -75,6 +82,25 @@ const chatSlice = createSlice({
       if (convIndex !== -1) {
         state.conversations[convIndex].last_message = normalized;
       }
+    },
+
+    addReaction: (state, action) => {
+      const { message_id, emoji, user_id } = action.payload;
+      const msg = state.messages.find(m => String(m.id) === String(message_id));
+      if (!msg) return;
+      msg.reactions = msg.reactions || [];
+      // prevent duplicate from same user
+      const exists = msg.reactions.find(r => String(r.user?.id) === String(user_id) && r.emoji === emoji);
+      if (!exists) {
+        msg.reactions.push({ user: { id: user_id }, emoji });
+      }
+    },
+
+    removeReaction: (state, action) => {
+      const { message_id, emoji, user_id } = action.payload;
+      const msg = state.messages.find(m => String(m.id) === String(message_id));
+      if (!msg || !msg.reactions) return;
+      msg.reactions = msg.reactions.filter(r => !(String(r.user?.id) === String(user_id) && r.emoji === emoji));
     },
 
     /** Replace a pending optimistic message with the confirmed one from message_ack */
@@ -119,6 +145,19 @@ const chatSlice = createSlice({
     clearTypingUser: (state, action) => {
       state.typingUsers = state.typingUsers.filter((id) => id !== action.payload);
     },
+
+    // Muted conversations
+    setMutedConversations: (state, action) => {
+      state.mutedConversations = action.payload;
+    },
+    addMutedConversation: (state, action) => {
+      if (!state.mutedConversations.includes(action.payload)) {
+        state.mutedConversations.push(action.payload);
+      }
+    },
+    removeMutedConversation: (state, action) => {
+      state.mutedConversations = state.mutedConversations.filter(id => id !== action.payload);
+    },
   },
 });
 
@@ -134,6 +173,11 @@ export const {
   updateMessageStatus,
   setTypingUser,
   clearTypingUser,
+  addReaction,
+  removeReaction,
+  setMutedConversations,
+  addMutedConversation,
+  removeMutedConversation,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;
