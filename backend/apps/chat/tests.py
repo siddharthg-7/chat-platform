@@ -119,21 +119,29 @@ class ChatConsumerTests(TransactionTestCase):
         # Connect user1
         communicator = WebsocketCommunicator(
             application,
-            f"/ws/chat/{conversation.id}/",
+            "/ws/chat/",
             subprotocols=["access_token", str(token)]
         )
         connected, subprotocol = await communicator.connect()
         self.assertTrue(connected)
+        
+        # Consume initial online_users message
+        initial_response = await communicator.receive_json_from()
+        self.assertEqual(initial_response['action'], 'online_users')
 
         # Connect user2 to trigger presence broadcast for user1
         token2 = str(AccessToken.for_user(user2))
         communicator2 = WebsocketCommunicator(
             application,
-            f"/ws/chat/{conversation.id}/",
+            "/ws/chat/",
             subprotocols=["access_token", str(token2)]
         )
         connected2, subprotocol2 = await communicator2.connect()
         self.assertTrue(connected2)
+
+        # Consume initial online_users message for user2
+        initial_response2 = await communicator2.receive_json_from()
+        self.assertEqual(initial_response2['action'], 'online_users')
 
         # Receive presence broadcast
         response = await communicator.receive_json_from()
@@ -144,7 +152,8 @@ class ChatConsumerTests(TransactionTestCase):
         await communicator.send_json_to({
             "action": "send_message",
             "text": "Hello consumer!",
-            "temp_id": "temp-123"
+            "temp_id": "temp-123",
+            "conversation_id": conversation.id
         })
 
         # Expect message_ack for the sender
