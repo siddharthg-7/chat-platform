@@ -119,7 +119,7 @@ class ChatConsumerTests(TransactionTestCase):
         # Connect user1
         communicator = WebsocketCommunicator(
             application,
-            f"/ws/chat/{conversation.id}/",
+            "/ws/chat/",
             subprotocols=["access_token", str(token)]
         )
         connected, subprotocol = await communicator.connect()
@@ -129,7 +129,7 @@ class ChatConsumerTests(TransactionTestCase):
         token2 = str(AccessToken.for_user(user2))
         communicator2 = WebsocketCommunicator(
             application,
-            f"/ws/chat/{conversation.id}/",
+            "/ws/chat/",
             subprotocols=["access_token", str(token2)]
         )
         connected2, subprotocol2 = await communicator2.connect()
@@ -144,7 +144,8 @@ class ChatConsumerTests(TransactionTestCase):
         await communicator.send_json_to({
             "action": "send_message",
             "text": "Hello consumer!",
-            "temp_id": "temp-123"
+            "temp_id": "temp-123",
+            "conversation_id": conversation.id
         })
 
         # Expect message_ack for the sender
