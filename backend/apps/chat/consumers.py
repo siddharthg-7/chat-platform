@@ -88,16 +88,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         action = data.get('action')
 
         if action == 'send_message':
-            # Rate limiting check: max 30 messages/minute
-            now = time.time()
-            self.message_timestamps = [t for t in self.message_timestamps if now - t < 60]
-            if len(self.message_timestamps) >= 30:
-                await self.send(text_data=json.dumps({
-                    'action': 'error',
-                    'message': 'Rate limit exceeded. Please wait before sending more messages.'
-                }))
-                return
-            self.message_timestamps.append(now)
+            # Rate limiting removed for maximum speed
 
             conversation_id = data.get('conversation_id')
             text = data.get('text', '')

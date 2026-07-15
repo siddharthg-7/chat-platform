@@ -90,23 +90,30 @@ const Chat = () => {
   return (
     <div className="flex-1 flex overflow-hidden bg-base">
       <div ref={containerRef} className="flex flex-1 overflow-hidden h-full">
-        <div style={{ width: `${chatListWidth}px` }} className="shrink-0 h-full">
+        {/* Sidebar: Full width on mobile if no active chat, hidden on mobile if active chat. Fixed/resizable width on desktop */}
+        <div 
+          style={{ width: window.innerWidth < 768 ? '100%' : `${chatListWidth}px` }} 
+          className={`shrink-0 h-full ${activeConversation ? 'hidden md:block' : 'w-full md:w-auto'}`}
+        >
           <ChatSidebar />
         </div>
 
+        {/* Resizer: Hidden on mobile */}
         <div
           onMouseDown={() => setIsDragging(true)}
-          className="group relative w-[6px] cursor-col-resize bg-transparent transition"
+          className="group relative w-[6px] cursor-col-resize bg-transparent transition hidden md:block"
         >
           <div className="absolute left-1/2 top-0 h-full w-[2px] -translate-x-1/2 rounded-full bg-transparent transition-all duration-200 group-hover:bg-accent" />
         </div>
 
-        <div className="flex-1 min-w-0 h-full overflow-hidden">
+        {/* Chat Area: Hidden on mobile if no active chat, full width otherwise */}
+        <div className={`flex-1 min-w-0 h-full overflow-hidden ${!activeConversation ? 'hidden md:flex flex-col' : 'flex flex-col'}`}>
           <ChatArea messagesLoading={messagesLoading} />
         </div>
 
+        {/* Right Sidebar: Hidden completely on mobile for simplicity, or overlay (for now hidden on mobile) */}
         {rightSidebarOpen && (
-          <div className="w-[320px] shrink-0 border-l border-[var(--border)] h-full bg-[var(--bg-panel)] animate-slide-in">
+          <div className="w-[320px] shrink-0 border-l border-[var(--border)] h-full bg-[var(--bg-panel)] animate-slide-in hidden xl:block">
             <ChatRightSidebar type={rightSidebarType} />
           </div>
         )}

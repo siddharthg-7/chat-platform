@@ -36,7 +36,9 @@ export const chatService = {
       formData.append('files', file);
     });
 
-    const response = await api.post('/chat/send/', formData);
+    const response = await api.post('/chat/send/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   },
 

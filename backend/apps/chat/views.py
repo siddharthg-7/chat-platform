@@ -113,23 +113,28 @@ class SendMessageView(APIView):
         files = request.FILES.getlist('files')
 
         if not conversation_id:
+            print("ERROR: conversation_id is required")
             return Response({"error": "conversation_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             conversation = request.user.conversations.get(id=conversation_id)
         except Conversation.DoesNotExist:
+            print("ERROR: Conversation not found")
             return Response({"error": "Conversation not found"}, status=status.HTTP_404_NOT_FOUND)
 
         if not text and not files:
+            print("ERROR: Message text or file is required")
             return Response({"error": "Message text or file is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        ALLOWED_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.gif', '.pdf', '.doc', '.docx', '.txt')
+        ALLOWED_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.gif', '.pdf', '.doc', '.docx', '.txt', '.webm', '.ogg', '.mp3', '.wav', '.m4a')
         MAX_FILE_SIZE = 5 * 1024 * 1024
 
         for file in files:
             if file.size > MAX_FILE_SIZE:
+                print(f"ERROR: File {file.name} exceeds 5MB limit.")
                 return Response({"error": f"File {file.name} exceeds 5MB limit."}, status=status.HTTP_400_BAD_REQUEST)
             if not file.name.lower().endswith(ALLOWED_EXTENSIONS):
+                print(f"ERROR: File {file.name} has unsupported type.")
                 return Response({"error": f"File {file.name} has unsupported type."}, status=status.HTTP_400_BAD_REQUEST)
 
         from apps.common.cloudinary_service import upload_attachment

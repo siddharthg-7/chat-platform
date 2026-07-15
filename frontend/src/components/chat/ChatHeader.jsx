@@ -12,13 +12,14 @@ import {
   Pin, 
   Mail, 
   X,
-  ShieldAlert
+  ShieldAlert,
+  ArrowLeft
 } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { Avatar } from "@/components/ui/Avatar";
-import { removeConversation, toggleMuteConversation, setSearchQuery, setRightSidebar } from '@/store/slices/chatSlice';
+import { removeConversation, toggleMuteConversation, setSearchQuery, setRightSidebar, setActiveConversation } from '@/store/slices/chatSlice';
 import { chatService } from '@/services/chat.service';
 
 const ChatHeader = ({ chat }) => {
@@ -146,7 +147,14 @@ const ChatHeader = ({ chat }) => {
       ) : (
         // Standard Header Mode
         <>
-          <div className="flex items-center gap-4 cursor-pointer" onClick={handleViewProfile}>
+          <div className="flex items-center gap-2 md:gap-4">
+            <button 
+              onClick={() => dispatch(setActiveConversation(null))}
+              className="md:hidden p-2 -ml-2 rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg-glass-hover)] transition"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div className="flex items-center gap-3 cursor-pointer" onClick={handleViewProfile}>
             <div className="relative">
               <Avatar src={chat.avatar} fallback={chat.name.substring(0, 2)} className="h-11 w-11 border border-[var(--border)]" />
               {chat.online && (
@@ -159,6 +167,7 @@ const ChatHeader = ({ chat }) => {
               <p className="text-xs text-[var(--text-muted)]">
                 {chat.isGroup ? "Group Chat" : chat.online ? "Online" : "Offline"}
               </p>
+            </div>
             </div>
           </div>
 
