@@ -19,7 +19,7 @@ def create_message_notifications(
 
     recipients = list(
         conversation.participants.exclude(id=sender_id).exclude(
-            mutes__conversation=conversation
+            conversationmute__conversation=conversation
         )
     )
     if not recipients:
