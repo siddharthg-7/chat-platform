@@ -124,6 +124,10 @@ class ChatConsumerTests(TransactionTestCase):
         )
         connected, subprotocol = await communicator.connect()
         self.assertTrue(connected)
+        
+        # Consume initial online_users message
+        initial_response = await communicator.receive_json_from()
+        self.assertEqual(initial_response['action'], 'online_users')
 
         # Connect user2 to trigger presence broadcast for user1
         token2 = str(AccessToken.for_user(user2))
@@ -134,6 +138,10 @@ class ChatConsumerTests(TransactionTestCase):
         )
         connected2, subprotocol2 = await communicator2.connect()
         self.assertTrue(connected2)
+
+        # Consume initial online_users message for user2
+        initial_response2 = await communicator2.receive_json_from()
+        self.assertEqual(initial_response2['action'], 'online_users')
 
         # Receive presence broadcast
         response = await communicator.receive_json_from()
