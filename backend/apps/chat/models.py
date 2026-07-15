@@ -15,6 +15,13 @@ class Conversation(models.Model):
         null=True, blank=True,
         related_name="administered_groups"
     )
+    admins = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="administered_conversations",
+        blank=True
+    )
+    avatar = models.CharField(max_length=1024, null=True, blank=True)
+    cover = models.CharField(max_length=1024, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -37,6 +44,12 @@ class Message(models.Model):
     text = models.TextField(blank=True)
     is_read = models.BooleanField(default=False)
     is_delivered = models.BooleanField(default=False)
+    reply_to = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name="replies")
+    is_edited = models.BooleanField(default=False)
+    is_pinned = models.BooleanField(default=False)
+    deleted_for_users = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="deleted_messages", blank=True)
+    starred_by = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="starred_messages", blank=True)
+    voice_note = models.CharField(max_length=1024, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
@@ -44,12 +57,17 @@ class Message(models.Model):
         indexes = [models.Index(fields=['conversation', 'created_at'])]
 
     def __str__(self):
+        if self.voice_note:
+            return "Voice Note"
         return self.text[:30] if self.text else "Attachment"
 
 
 class Attachment(models.Model):
     message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name="attachments")
-    file = models.FileField(upload_to="attachments/")
+    file_url = models.CharField(max_length=1024, default="")
+    file_name = models.CharField(max_length=255, blank=True, null=True)
+    file_size = models.IntegerField(blank=True, null=True)
+    mime_type = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
@@ -60,4 +78,4 @@ class Reaction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ("message", "user", "emoji")
+        unique_together = ("message", "user", "emoji")

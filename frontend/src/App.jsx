@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import MainLayout from './layouts/MainLayout';
@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import { authService } from './services/auth.service';
 import { setAuthSuccess, logout } from './store/slices/authSlice';
+import { Loader2 } from 'lucide-react';
 
 // Pages
 import Login from './pages/Login';
@@ -18,12 +19,16 @@ import Settings from './pages/Settings';
 
 function AppRoutes() {
   const dispatch = useDispatch();
+  const [isHydrated, setIsHydrated] = useState(!localStorage.getItem('access_token'));
 
   // On first load: if an access token exists, fetch the user profile and
   // hydrate the Redux store so state.auth.user is never null after refresh.
   useEffect(() => {
     const token = localStorage.getItem('access_token');
-    if (!token) return;
+    if (!token) {
+      setIsHydrated(true);
+      return;
+    }
 
     authService
       .getProfile()
@@ -33,10 +38,19 @@ function AppRoutes() {
       .catch(() => {
         // Token is invalid / expired and refresh also failed → log out cleanly
         dispatch(logout());
+      })
+      .finally(() => {
+        setIsHydrated(true);
       });
-    // Only run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [dispatch]);
+
+  if (!isHydrated) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-[var(--bg-surface)]">
+        <Loader2 className="h-10 w-10 animate-spin text-[var(--accent)]" />
+      </div>
+    );
+  }
 
   return (
     <Routes>

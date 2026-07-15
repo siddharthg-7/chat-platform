@@ -94,6 +94,32 @@ class UpdateProfileDetailsView(generics.UpdateAPIView):
 
     def get_object(self):
         return self.request.user.profile
+
+    def update(self, request, *args, **kwargs):
+        profile = self.get_object()
+        
+        # Make a mutable copy of the request data
+        data = request.data.copy()
+        
+        # Check if files are uploaded
+        avatar_file = request.FILES.get('avatar')
+        cover_file = request.FILES.get('cover_photo')
+        
+        from apps.common.cloudinary_service import upload_avatar, upload_cover_photo
+        
+        if avatar_file:
+            avatar_url = upload_avatar(avatar_file, request.user.id)
+            data['avatar'] = avatar_url
+            
+        if cover_file:
+            cover_url = upload_cover_photo(cover_file, request.user.id)
+            data['cover_photo'] = cover_url
+            
+        serializer = self.get_serializer(profile, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
 class ChangePasswordView(generics.UpdateAPIView):
     """
     Allows an authenticated user to change their password.

@@ -33,3 +33,4 @@ export function stringToHue(str = "") {
   }
   return Math.abs(hash) % 360;
 }
+

@@ -11,3 +11,4 @@ export default function Loader({ size = 20, className }) {
     />
   );
 }
+

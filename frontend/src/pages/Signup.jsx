@@ -48,11 +48,24 @@ const Signup = () => {
       dispatch(setAuthSuccess({ user: fullUser }));
       navigate('/');
     } catch (err) {
-      dispatch(setAuthFailure(
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        (err.response?.data ? JSON.stringify(err.response.data) : 'Something went wrong creating your account. Please try again.')
-      ));
+      let msg = 'Something went wrong creating your account. Please try again.';
+      if (err.response?.data) {
+        const data = err.response.data;
+        if (typeof data === 'string') {
+          msg = data;
+        } else if (data.message) {
+          msg = data.message;
+        } else if (data.error) {
+          msg = data.error;
+        } else if (data.detail) {
+          msg = data.detail;
+        } else {
+          msg = Object.entries(data)
+            .map(([field, errs]) => `${field}: ${Array.isArray(errs) ? errs.join(', ') : errs}`)
+            .join(' | ');
+        }
+      }
+      dispatch(setAuthFailure(msg));
     }
   };
  
@@ -205,3 +218,4 @@ const Signup = () => {
 };
 
 export default Signup;
+

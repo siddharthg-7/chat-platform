@@ -16,16 +16,21 @@ export const chatService = {
     return response.data;
   },
 
-  getMessages: async (conversationId) => {
-    const response = await api.get(`/chat/messages/${conversationId}/`);
+  getMessages: async (conversationId, cursorUrl = null) => {
+    const url = cursorUrl || `/chat/messages/${conversationId}/`;
+    const response = await api.get(url);
     const results = response.data.results ?? response.data;
-    return [...results].reverse();
+    return {
+      messages: [...results].reverse(),
+      nextCursor: response.data.next || null
+    };
   },
 
-  sendMessage: async (conversationId, text = '', files = []) => {
+  sendMessage: async (conversationId, text = '', files = [], isVoiceNote = false) => {
     const formData = new FormData();
     formData.append('conversation_id', conversationId);
     if (text) formData.append('text', text);
+    if (isVoiceNote) formData.append('is_voice_note', 'true');
 
     files.forEach(file => {
       formData.append('files', file);
@@ -52,6 +57,33 @@ export const chatService = {
 
   deleteConversation: async (conversationId) => {
     const response = await api.delete(`/chat/conversations/${conversationId}/`);
+    return response.data;
+  },
+
+  updateGroup: async (groupId, name, avatarFile = null, coverFile = null) => {
+    const formData = new FormData();
+    if (name) formData.append('name', name);
+    if (avatarFile) formData.append('avatar', avatarFile);
+    if (coverFile) formData.append('cover', coverFile);
+    
+    const response = await api.patch(`/chat/group/${groupId}/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  groupMemberAction: async (groupId, userId, action) => {
+    const response = await api.post(`/chat/group/${groupId}/members/`, { user_id: userId, action });
+    return response.data;
+  },
+
+  leaveGroup: async (groupId) => {
+    const response = await api.post(`/chat/group/${groupId}/leave/`);
+    return response.data;
+  },
+
+  toggleStar: async (messageId) => {
+    const response = await api.post(`/chat/messages/${messageId}/star/`);
     return response.data;
   },
 };

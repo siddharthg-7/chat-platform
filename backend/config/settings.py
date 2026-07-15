@@ -77,28 +77,54 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
-if DEBUG:
+import urllib.parse as urlparse
+
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    url = urlparse.urlparse(DATABASE_URL)
     DATABASES = {
         'default': {
-            'ENGINE': os.environ.get('DATABASE_ENGINE', 'django.db.backends.postgresql'),
-            'NAME': os.environ.get('DATABASE_NAME', 'postgres'),
-            'USER': os.environ.get('DATABASE_USER', 'postgres'),
-            'PASSWORD': os.environ.get('DATABASE_PASSWORD', ''),
-            'HOST': os.environ.get('DATABASE_HOST', '127.0.0.1'),
-            'PORT': os.environ.get('DATABASE_PORT', '5432'),
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': url.path[1:],
+            'USER': url.username,
+            'PASSWORD': url.password,
+            'HOST': url.hostname,
+            'PORT': url.port or 5432,
+            'DISABLE_SERVER_SIDE_CURSORS': True,
         }
     }
+    queries = urlparse.parse_qs(url.query)
+    if 'sslmode' in queries:
+        DATABASES['default']['OPTIONS'] = {
+            'sslmode': queries['sslmode'][0]
+        }
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': os.environ['DATABASE_ENGINE'],
-            'NAME': os.environ['DATABASE_NAME'],
-            'USER': os.environ['DATABASE_USER'],
-            'PASSWORD': os.environ['DATABASE_PASSWORD'],
-            'HOST': os.environ['DATABASE_HOST'],
-            'PORT': os.environ['DATABASE_PORT'],
+    if DEBUG:
+        DATABASES = {
+            'default': {
+                'ENGINE': os.environ.get('DATABASE_ENGINE', 'django.db.backends.postgresql'),
+                'NAME': os.environ.get('DATABASE_NAME', 'postgres'),
+                'USER': os.environ.get('DATABASE_USER', 'postgres'),
+                'PASSWORD': os.environ.get('DATABASE_PASSWORD', ''),
+                'HOST': os.environ.get('DATABASE_HOST', '127.0.0.1'),
+                'PORT': os.environ.get('DATABASE_PORT', '5432'),
+                'DISABLE_SERVER_SIDE_CURSORS': True,
+            }
         }
-    }
+    else:
+        DATABASES = {
+            'default': {
+                'ENGINE': os.environ['DATABASE_ENGINE'],
+                'NAME': os.environ['DATABASE_NAME'],
+                'USER': os.environ['DATABASE_USER'],
+                'PASSWORD': os.environ['DATABASE_PASSWORD'],
+                'HOST': os.environ['DATABASE_HOST'],
+                'PORT': os.environ['DATABASE_PORT'],
+                'DISABLE_SERVER_SIDE_CURSORS': True,
+            }
+        }
+
+
 if DEBUG:
     REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/0')
 else:
@@ -214,4 +240,22 @@ LOGGING = {
         },
     },
 }
+
+# Cloudinary Configuration
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME")
+CLOUDINARY_API_KEY = os.environ.get("CLOUDINARY_API_KEY")
+CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET")
+
+if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
+    cloudinary.config(
+        cloud_name=CLOUDINARY_CLOUD_NAME,
+        api_key=CLOUDINARY_API_KEY,
+        api_secret=CLOUDINARY_API_SECRET,
+        secure=True
+    )
+
 

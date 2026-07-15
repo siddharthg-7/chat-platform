@@ -7,6 +7,11 @@ export const authService = {
       localStorage.setItem('access_token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);
     }
+    // Request OS notification permission on login (user gesture) so background
+    // alerts work for incoming messages.
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
     return response.data;
   },
 
@@ -50,5 +55,14 @@ export const authService = {
     const response = await api.get(`/accounts/users/${userId}/`);
     return response.data;
   },
+
+  changePassword: async (currentPassword, newPassword) => {
+    const response = await api.put('/accounts/change-password/', {
+      old_password: currentPassword,
+      new_password: newPassword,
+    });
+    return response.data;
+  },
 };
+
 

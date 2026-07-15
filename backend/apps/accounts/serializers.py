@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -10,7 +9,7 @@ User = get_user_model()
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ['avatar', 'bio', 'is_online', 'last_seen']
+        fields = ['avatar', 'cover_photo', 'bio', 'is_online', 'last_seen']
 
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(read_only=True)
@@ -21,7 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class SignupSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
-    confirm_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True, required=False)
     
     class Meta:
         model = User
@@ -56,7 +55,7 @@ class SignupSerializer(serializers.ModelSerializer):
         password = attrs.get("password")
         confirm_password = attrs.get("confirm_password")
 
-        if password != confirm_password:
+        if confirm_password is not None and password != confirm_password:
             raise serializers.ValidationError({
                 "confirm_password": "Passwords do not match."
             })
@@ -94,15 +93,16 @@ class SignupSerializer(serializers.ModelSerializer):
             })
 
         return attrs
+
     def create(self, validated_data):
-        validated_data.pop("confirm_password")
+        validated_data.pop("confirm_password", None)
         user = User.objects.create_user(
-        username=validated_data["username"],
-        email=validated_data.get("email", ""),
-        password=validated_data["password"],
-        first_name=validated_data.get("first_name", ""),
-        last_name=validated_data.get("last_name", "")
-    )
+            username=validated_data["username"],
+            email=validated_data.get("email", ""),
+            password=validated_data["password"],
+            first_name=validated_data.get("first_name", ""),
+            last_name=validated_data.get("last_name", "")
+        )
         return user
 
 class ChangePasswordSerializer(serializers.Serializer):

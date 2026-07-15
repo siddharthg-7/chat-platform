@@ -40,6 +40,7 @@ const Login = () => {
       navigate('/');
     } catch (err) {
       const msg =
+        err.response?.data?.error ||
         err.response?.data?.detail ||
         err.response?.data?.message ||
         (err.response?.data ? JSON.stringify(err.response.data) : 'Invalid username or password.');
@@ -145,3 +146,4 @@ const Login = () => {
 };
 
 export default Login;
+

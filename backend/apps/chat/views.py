@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from .models import Conversation, Message, Attachment, ConversationMute, Reaction
 from .serializers import ConversationSerializer, MessageSerializer, ReactionSerializer
-from .services import create_conversation, get_messages, send_message
+from .services import create_conversation
 
 User = get_user_model()
 
@@ -19,7 +19,7 @@ class ConversationListView(APIView):
     def get(self, request):
         conversations = request.user.conversations.prefetch_related(
             'participants', 'participants__profile', 'mutes'
-        ).all()
+        ).order_by('-updated_at')
         serializer = ConversationSerializer(conversations, many=True, context={'request': request})
         return Response(serializer.data)
 
@@ -56,6 +56,7 @@ class CreateGroupConversationView(APIView):
 
         conversation = Conversation.objects.create(is_group=True, name=name, admin=request.user)
         conversation.participants.add(request.user, *members)
+        conversation.admins.add(request.user)
 
         serializer = ConversationSerializer(conversation, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -131,14 +132,75 @@ class SendMessageView(APIView):
             if not file.name.lower().endswith(ALLOWED_EXTENSIONS):
                 return Response({"error": f"File {file.name} has unsupported type."}, status=status.HTTP_400_BAD_REQUEST)
 
+        from apps.common.cloudinary_service import upload_attachment
+        import mimetypes
+
+        is_voice_note = request.data.get("is_voice_note") in ["true", True, "True"]
+
         message = Message.objects.create(conversation=conversation, sender=request.user, text=text)
 
-        for file in files:
-            Attachment.objects.create(message=message, file=file)
+        if is_voice_note and files:
+            file_url = upload_attachment(files[0], files[0].name)
+            message.voice_note = file_url
+            message.save()
+        else:
+            for file in files:
+                file_url = upload_attachment(file, file.name)
+                mime_type, _ = mimetypes.guess_type(file.name)
+                if not mime_type:
+                    mime_type = "application/octet-stream"
+
+                Attachment.objects.create(
+                    message=message,
+                    file_url=file_url,
+                    file_name=file.name,
+                    file_size=file.size,
+                    mime_type=mime_type
+                )
 
         conversation.save()
 
         serializer = MessageSerializer(message)
+
+        # Create in-app notifications for recipients
+        from apps.notifications.services import create_message_notifications
+        create_message_notifications(
+            conversation.id,
+            request.user.id,
+            request.user.username,
+            text,
+            message.voice_note,
+        )
+
+        # Broadcast the newly created message to all participants' WebSocket groups
+        from asgiref.sync import async_to_sync
+        from channels.layers import get_channel_layer
+        
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            participant_ids = list(conversation.participants.values_list('id', flat=True))
+            for p_id in participant_ids:
+                async_to_sync(channel_layer.group_send)(
+                    f'user_{p_id}',
+                    {
+                        'type': 'chat_event',
+                        'event': {
+                            'action': 'receive_message',
+                            'message_id': message.id,
+                            'conversation_id': conversation.id,
+                            'text': message.text,
+                            'sender_id': request.user.id,
+                            'sender_username': request.user.username,
+                            'created_at': str(message.created_at),
+                            'reply_to_id': message.reply_to_id,
+                            'voice_note': message.voice_note,
+                            'is_read': message.is_read,
+                            'is_delivered': message.is_delivered,
+                            'attachments': serializer.data.get('attachments', [])
+                        }
+                    }
+                )
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -164,3 +226,123 @@ class ToggleReactionView(APIView):
             
         serializer = ReactionSerializer(reaction)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class GroupUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, conversation_id):
+        conversation = get_object_or_404(Conversation, id=conversation_id, is_group=True)
+        
+        # Check if user is admin
+        if not (conversation.admin == request.user or conversation.admins.filter(id=request.user.id).exists()):
+            return Response({"error": "Only group admins can update group settings."}, status=status.HTTP_403_FORBIDDEN)
+            
+        name = request.data.get("name")
+        avatar_file = request.FILES.get("avatar")
+        cover_file = request.FILES.get("cover")
+        
+        if name is not None:
+            name_str = name.strip()
+            if not name_str:
+                return Response({"error": "Group name cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+            conversation.name = name_str
+
+        from apps.common.cloudinary_service import upload_attachment
+        
+        if avatar_file:
+            avatar_url = upload_attachment(avatar_file, f"group_{conversation_id}_avatar")
+            conversation.avatar = avatar_url
+            
+        if cover_file:
+            cover_url = upload_attachment(cover_file, f"group_{conversation_id}_cover")
+            conversation.cover = cover_url
+            
+        conversation.save()
+        serializer = ConversationSerializer(conversation, context={'request': request})
+        return Response(serializer.data)
+
+
+class GroupMemberActionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, conversation_id):
+        conversation = get_object_or_404(Conversation, id=conversation_id, is_group=True)
+        
+        # Check if user is admin
+        if not (conversation.admin == request.user or conversation.admins.filter(id=request.user.id).exists()):
+            return Response({"error": "Only group admins can perform member actions."}, status=status.HTTP_403_FORBIDDEN)
+            
+        action = request.data.get("action") # 'promote', 'remove', 'add'
+        target_user_id = request.data.get("user_id")
+        
+        if not action or not target_user_id:
+            return Response({"error": "action and user_id are required."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        target_user = get_object_or_404(User, id=target_user_id)
+        
+        if action == "promote":
+            if not conversation.participants.filter(id=target_user.id).exists():
+                return Response({"error": "User is not a participant of this group."}, status=status.HTTP_400_BAD_REQUEST)
+            conversation.admins.add(target_user)
+            conversation.save()
+            
+        elif action == "remove":
+            if target_user == request.user:
+                return Response({"error": "Cannot remove yourself. Use leave group instead."}, status=status.HTTP_400_BAD_REQUEST)
+            conversation.participants.remove(target_user)
+            conversation.admins.remove(target_user)
+            conversation.save()
+            
+        elif action == "add":
+            conversation.participants.add(target_user)
+            conversation.save()
+            
+        else:
+            return Response({"error": "Invalid action."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        serializer = ConversationSerializer(conversation, context={'request': request})
+        return Response(serializer.data)
+
+
+class GroupLeaveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, conversation_id):
+        conversation = get_object_or_404(Conversation, id=conversation_id, is_group=True)
+        
+        if not conversation.participants.filter(id=request.user.id).exists():
+            return Response({"error": "You are not a participant of this group."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Remove from participants and admins
+        conversation.participants.remove(request.user)
+        is_admin = conversation.admins.filter(id=request.user.id).exists()
+        if is_admin:
+            conversation.admins.remove(request.user)
+            
+        remaining_participants = conversation.participants.all()
+        if remaining_participants.count() == 0:
+            conversation.delete()
+            return Response({"status": "deleted"}, status=status.HTTP_200_OK)
+            
+        # If no admins remaining, promote the next oldest participant
+        if is_admin and conversation.admins.count() == 0:
+            next_admin = remaining_participants.first()
+            conversation.admins.add(next_admin)
+            conversation.admin = next_admin
+            conversation.save()
+            
+        return Response({"status": "left"}, status=status.HTTP_200_OK)
+
+
+class ToggleStarView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, message_id):
+        message = get_object_or_404(Message, id=message_id)
+        if message.starred_by.filter(id=request.user.id).exists():
+            message.starred_by.remove(request.user)
+            return Response({"starred": False}, status=status.HTTP_200_OK)
+        else:
+            message.starred_by.add(request.user)
+            return Response({"starred": True}, status=status.HTTP_200_OK)

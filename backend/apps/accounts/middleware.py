@@ -1,10 +1,12 @@
-import jwt
-from django.conf import settings
+import logging
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from channels.db import database_sync_to_async
 from channels.middleware import BaseMiddleware
 from urllib.parse import parse_qs
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -55,7 +57,7 @@ class JWTAuthMiddleware(BaseMiddleware):
                 user_id = validated_token['user_id']
                 scope['user'] = await get_user(user_id)
             except Exception as e:
-                print("JWT Error:", e)
+                logger.warning("JWT authentication failed: %s", e)
                 scope['user'] = AnonymousUser()
         else:
             scope['user'] = AnonymousUser()

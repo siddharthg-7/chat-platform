@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, User, Loader2, Users, Check } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { chatService } from '@/services/chat.service';
 import { setConversations, setActiveConversation } from '@/store/slices/chatSlice';
 

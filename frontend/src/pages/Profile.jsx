@@ -10,6 +10,7 @@ import { Camera, Mail, Calendar, AlertCircle, CheckCircle, Loader2, LogOut } fro
 import { motion } from 'framer-motion';
 import { authService } from '../services/auth.service';
 import { logout, updateProfile } from '../store/slices/authSlice';
+import { toast } from 'sonner';
 
 const DEFAULT_COVER_GRADIENT = 'linear-gradient(to bottom right, #10b981, #047857, #064e3b)';
 
@@ -27,10 +28,12 @@ const Profile = () => {
 
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
 
   const avatarInputRef = useRef(null);
+  const coverInputRef = useRef(null);
 
   useEffect(() => {
     if (user) {
@@ -122,13 +125,54 @@ const Profile = () => {
           ...updatedProfileDetails
         }
       }));
+      toast.success("Avatar updated!");
     } catch (err) {
       console.error('Failed to upload avatar:', err);
-      alert('Failed to upload avatar.');
+      toast.error('Failed to upload avatar.');
     } finally {
       setUploadingAvatar(false);
       e.target.value = '';
     }
+  };
+
+  const handleCoverChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file.');
+      return;
+    }
+
+    setUploadingCover(true);
+    const formData = new FormData();
+    formData.append('cover_photo', file);
+
+    try {
+      const updatedProfileDetails = await authService.updateProfileDetails(formData);
+      dispatch(updateProfile({
+        profile: {
+          ...user.profile,
+          ...updatedProfileDetails
+        }
+      }));
+      toast.success("Cover photo updated!");
+    } catch (err) {
+      console.error('Failed to upload cover photo:', err);
+      toast.error('Failed to upload cover photo.');
+    } finally {
+      setUploadingCover(false);
+      e.target.value = '';
+    }
+  };
+
+  const getCoverUrl = () => {
+    if (user.profile?.cover_photo) {
+      return user.profile.cover_photo.startsWith('http')
+        ? user.profile.cover_photo
+        : `${import.meta.env.VITE_API_URL || ''}${user.profile.cover_photo}`;
+    }
+    return null;
   };
 
   const handleLogout = async () => {
@@ -162,16 +206,42 @@ const Profile = () => {
           transition={{ duration: 0.4 }}
           className="relative"
         >
-          <div className="h-52 w-full rounded-2xl overflow-hidden relative">
-            <div
-              className="absolute inset-0"
-              style={{ background: DEFAULT_COVER_GRADIENT }}
-            />
-            <div
-              className="absolute inset-0 opacity-20"
-              style={{
-                backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.15) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.10) 0%, transparent 50%)',
-              }}
+          <div className="h-52 w-full rounded-2xl overflow-hidden relative group">
+            {getCoverUrl() ? (
+              <img src={getCoverUrl()} alt="Cover" className="h-full w-full object-cover" />
+            ) : (
+              <>
+                <div
+                  className="absolute inset-0"
+                  style={{ background: DEFAULT_COVER_GRADIENT }}
+                />
+                <div
+                  className="absolute inset-0 opacity-20"
+                  style={{
+                    backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.15) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.10) 0%, transparent 50%)',
+                  }}
+                />
+              </>
+            )}
+            <Button
+              size="icon"
+              type="button"
+              disabled={uploadingCover}
+              onClick={() => coverInputRef.current?.click()}
+              className="absolute right-4 bottom-4 h-8 w-8 rounded-full text-xs shadow-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] border border-[var(--border)] opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              {uploadingCover ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Camera className="h-3.5 w-3.5" />
+              )}
+            </Button>
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleCoverChange}
             />
           </div>
 

@@ -24,6 +24,7 @@ env/
 backend/media/
 backend/static/
 backend/staticfiles/
+backend/db_dump*.json
 
 # VS Code
 .vscode/

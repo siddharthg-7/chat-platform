@@ -1,18 +1,19 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { chatService } from '../services/chat.service';
 import wsService from '../services/websocket';
 import { setConversations, setMessages, setActiveConversation } from '../store/slices/chatSlice';
 
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatArea from "@/components/chat/ChatArea";
+import ChatRightSidebar from "@/components/chat/ChatRightSidebar";
 
 const MIN_CHAT_LIST_WIDTH = 320;
 
 const Chat = () => {
   const dispatch = useDispatch();
-  const { activeConversation } = useSelector((state) => state.chat);
+  const { activeConversation, rightSidebarOpen, rightSidebarType } = useSelector((state) => state.chat);
 
   const [chatListWidth, setChatListWidth] = useState(360);
   const [isDragging, setIsDragging] = useState(false);
@@ -33,6 +34,10 @@ const Chat = () => {
 
     if (activeConversation) {
       setMessagesLoading(true);
+      
+      // Mark all messages as read in this conversation
+      wsService.sendReadAll(activeConversation);
+
       chatService.getMessages(activeConversation)
         .then((data) => {
           if (isCurrent) dispatch(setMessages(data));
@@ -44,13 +49,10 @@ const Chat = () => {
         .finally(() => {
           if (isCurrent) setMessagesLoading(false);
         });
-
-      wsService.connect(activeConversation);
     }
 
     return () => {
       isCurrent = false;
-      wsService.disconnect();
     };
   }, [activeConversation, dispatch]);
 
@@ -102,6 +104,12 @@ const Chat = () => {
         <div className="flex-1 min-w-0 h-full overflow-hidden">
           <ChatArea messagesLoading={messagesLoading} />
         </div>
+
+        {rightSidebarOpen && (
+          <div className="w-[320px] shrink-0 border-l border-[var(--border)] h-full bg-[var(--bg-panel)] animate-slide-in">
+            <ChatRightSidebar type={rightSidebarType} />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -31,13 +31,7 @@ const ChatArea = ({ messagesLoading }) => {
   return (
     <section className="flex h-full w-full flex-col bg-base">
       <ChatHeader chat={mappedChat} />
-      {messagesLoading ? (
-        <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
-          Loading messages…
-        </div>
-      ) : (
-        <ChatMessages />
-      )}
+      <ChatMessages messagesLoading={messagesLoading} />
       <MessageInput />
     </section>
   );

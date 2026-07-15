@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Bell, Lock, MonitorSmartphone, Volume2, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { changePasswordRequest } from '../services/authService';
+import { authService } from '../services/auth.service';
 
 
 const NAV_SECTIONS = [
@@ -65,33 +65,46 @@ const Settings = () => {
     }
   };
   const handlePasswordChange = async () => {
-  setPasswordError("");
+    setPasswordError("");
 
-  if (!currentPassword || !newPassword || !confirmPassword) {
-    setPasswordError("Please fill in all password fields.");
-    return;
-  }
-  if (newPassword.length < 8) {
-    setPasswordError("New password must be at least 8 characters.");
-    return;
-  }
-  if (newPassword !== confirmPassword) {
-    setPasswordError("New password and confirmation do not match.");
-    return;
-  }
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("Please fill in all password fields.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPasswordError("New password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New password and confirmation do not match.");
+      return;
+    }
 
-  try {
-    await changePasswordRequest({ currentPassword, newPassword });
-    setPasswordError("Password updated successfully!");
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-  } catch (error) {
-    setPasswordError(
-      error.response?.data?.error || error.response?.data?.old_password?.[0] || "Failed to update password."
-    );
-  }
-};
+    try {
+      await authService.changePassword(currentPassword, newPassword);
+      setPasswordError("Password updated successfully!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      let msg = "Failed to update password.";
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (typeof data === 'string') {
+          msg = data;
+        } else if (data.error) {
+          msg = data.error;
+        } else if (data.detail) {
+          msg = data.detail;
+        } else {
+          msg = Object.entries(data)
+            .map(([field, errs]) => `${field.replace('_', ' ')}: ${Array.isArray(errs) ? errs.join(', ') : errs}`)
+            .join(' | ');
+        }
+      }
+      setPasswordError(msg);
+    }
+  };
   useEffect(() => {
     if (themeMode === 'dark') {
       document.documentElement.classList.add('dark');
@@ -450,3 +463,4 @@ const Settings = () => {
 };
 
 export default Settings;
+
