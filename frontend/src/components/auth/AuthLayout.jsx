@@ -11,7 +11,7 @@ export default function AuthLayout({
 
   return (
     <div className="min-h-screen flex flex-col bg-surface text-foreground transition-colors duration-300">
-      <header className="h-16 flex items-center justify-between px-8 border-b border-border bg-panel transition-colors duration-300">
+      <header className="h-16 flex items-center justify-between px-4 md:px-8 border-b border-border bg-panel transition-colors duration-300">
         <div className="flex items-center gap-3">
           <img
             src={logo}

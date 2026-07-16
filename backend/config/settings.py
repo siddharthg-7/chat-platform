@@ -94,10 +94,13 @@ if DATABASE_URL:
         }
     }
     queries = urlparse.parse_qs(url.query)
+    db_options = {}
     if 'sslmode' in queries:
-        DATABASES['default']['OPTIONS'] = {
-            'sslmode': queries['sslmode'][0]
-        }
+        db_options['sslmode'] = queries['sslmode'][0]
+    if 'options' in queries:
+        db_options['options'] = queries['options'][0]
+    if db_options:
+        DATABASES['default']['OPTIONS'] = db_options
 else:
     if DEBUG:
         DATABASES = {
@@ -258,4 +261,7 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
         secure=True
     )
 
+# Web Push Configuration
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY")
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY")
 

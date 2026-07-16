@@ -13,14 +13,46 @@ from .services import create_conversation
 User = get_user_model()
 
 
+from django.db.models import Prefetch, Count, Q, Exists, OuterRef
+
 class ConversationListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         conversations = request.user.conversations.prefetch_related(
-            'participants', 'participants__profile', 'mutes'
+            'participants', 'participants__profile', 'admins'
+        ).annotate(
+            unread_count_annotated=Count(
+                'messages',
+                filter=Q(messages__is_read=False) & ~Q(messages__sender=request.user),
+                distinct=True
+            ),
+            is_muted_annotated=Exists(
+                ConversationMute.objects.filter(conversation=OuterRef('pk'), user=request.user)
+            )
         ).order_by('-updated_at')
-        serializer = ConversationSerializer(conversations, many=True, context={'request': request})
+
+        conversation_list = list(conversations)
+        conversation_ids = [c.id for c in conversation_list]
+
+        if conversation_ids:
+            # PostgreSQL specific: distinct on conversation_id requires sorting by it first
+            latest_messages = Message.objects.filter(
+                conversation_id__in=conversation_ids
+            ).order_by('conversation_id', '-created_at').distinct('conversation_id').select_related(
+                'sender', 'sender__profile'
+            ).prefetch_related('attachments', 'reactions')
+
+            last_message_map = {m.conversation_id: m for m in latest_messages}
+        else:
+            last_message_map = {}
+
+        for c in conversation_list:
+            c.prefetched_last_message = last_message_map.get(c.id)
+            c.prefetched_unread_count = c.unread_count_annotated
+            c.prefetched_is_muted = c.is_muted_annotated
+
+        serializer = ConversationSerializer(conversation_list, many=True, context={'request': request})
         return Response(serializer.data)
 
     def post(self, request):
@@ -99,7 +131,7 @@ class MessageListView(generics.ListAPIView):
         conversation_id = self.kwargs.get('conversation_id')
         try:
             conversation = self.request.user.conversations.get(id=conversation_id)
-            return conversation.messages.select_related('sender', 'sender__profile').prefetch_related('attachments').all()
+            return conversation.messages.select_related('sender', 'sender__profile').prefetch_related('attachments', 'reactions', 'starred_by').all()
         except Conversation.DoesNotExist:
             return Message.objects.none()
 

@@ -187,7 +187,7 @@ const Settings = () => {
                     <CardDescription>Customize the look and feel of your application.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-5">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div>
                         <h4 className="text-sm font-medium text-[var(--text)]">Color Mode</h4>
                         <p className="text-xs text-[var(--text-muted)] mt-0.5">The platform is optimized for dark mode.</p>
@@ -315,7 +315,7 @@ const Settings = () => {
                             onToggle={() => setFriendRequests(!friendRequests)}
                           />
                           </div>
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div>
                             <h4 className="text-sm font-medium text-[var(--text)]">
                               Profile Visibility

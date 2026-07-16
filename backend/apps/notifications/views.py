@@ -24,3 +24,29 @@ class MarkNotificationReadView(APIView):
             return Response(status=status.HTTP_200_OK)
         except Notification.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
+
+class SavePushSubscriptionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        data = request.data
+        endpoint = data.get('endpoint')
+        keys = data.get('keys', {})
+        auth = keys.get('auth')
+        p256dh = keys.get('p256dh')
+
+        if not endpoint or not auth or not p256dh:
+            return Response({"error": "Invalid subscription data"}, status=status.HTTP_400_BAD_REQUEST)
+
+        from .models import PushSubscription
+        sub, created = PushSubscription.objects.get_or_create(
+            user=request.user,
+            endpoint=endpoint,
+            defaults={'auth': auth, 'p256dh': p256dh}
+        )
+        if not created:
+            sub.auth = auth
+            sub.p256dh = p256dh
+            sub.save()
+
+        return Response(status=status.HTTP_201_CREATED)

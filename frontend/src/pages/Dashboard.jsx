@@ -131,8 +131,8 @@ const Dashboard = () => {
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
             <p className="text-sm text-muted-foreground mt-1">Welcome back — here's what's happening today.</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="relative w-56">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <div className="relative w-full sm:w-56">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
@@ -142,7 +142,7 @@ const Dashboard = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button className="gap-2 h-9" onClick={() => setShowNewChatModal(true)}>
+            <Button className="gap-2 h-9 w-full sm:w-auto" onClick={() => setShowNewChatModal(true)}>
               <Plus className="h-4 w-4" /> New Chat
             </Button>
           </div>

@@ -24,3 +24,14 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.type} - {self.user.username}"
+
+
+class PushSubscription(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='push_subscriptions')
+    endpoint = models.URLField(max_length=500)
+    auth = models.CharField(max_length=100)
+    p256dh = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Push Sub for {self.user.username}"

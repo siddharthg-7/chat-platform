@@ -46,7 +46,10 @@ function playNotificationSound() {
 class WebSocketService {
   constructor() {
     this.socket = null;
-    this.reconnectTimeout = 3000;
+    this.reconnectTimeout = 1000;
+    this.maxReconnectTimeout = 30000;
+    this.pingInterval = null;
+    this.offlineQueue = [];
     this.baseUrl =
       import.meta.env.VITE_WS_URL ||
       `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/chat`;
@@ -72,6 +75,9 @@ class WebSocketService {
 
     this.socket.onopen = () => {
       console.log('[WS] Persistent global WebSocket connected.');
+      this.reconnectTimeout = 1000;
+      this.startHeartbeat();
+      this.flushOfflineQueue();
     };
 
     this.socket.onmessage = (event) => {
@@ -81,6 +87,10 @@ class WebSocketService {
       } catch {
         console.error('[WS] Failed to parse message:', event.data);
         return;
+      }
+
+      if (data.action === 'pong') {
+        return; // Heartbeat response
       }
 
       const state = store.getState();
@@ -218,6 +228,7 @@ class WebSocketService {
     };
 
     this.socket.onclose = () => {
+      this.stopHeartbeat();
       console.log('[WS] Global WebSocket disconnected.');
       this.socket = null;
       if (!this._intentionalClose) {
@@ -226,6 +237,7 @@ class WebSocketService {
             this.connect();
           }
         }, this.reconnectTimeout);
+        this.reconnectTimeout = Math.min(this.reconnectTimeout * 2, this.maxReconnectTimeout);
       }
     };
 
@@ -238,6 +250,9 @@ class WebSocketService {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(data));
       return true;
+    }
+    if (!this._intentionalClose && data.action === 'send_message') {
+      this.offlineQueue.push(data);
     }
     return false;
   }
@@ -306,10 +321,31 @@ class WebSocketService {
 
   disconnect(intentional = true) {
     this._intentionalClose = intentional;
+    this.stopHeartbeat();
     if (this.socket) {
       this.socket.onclose = null;
       this.socket.close();
       this.socket = null;
+    }
+  }
+
+  startHeartbeat() {
+    this.pingInterval = setInterval(() => {
+      this.send({ action: 'ping' });
+    }, 15000);
+  }
+
+  stopHeartbeat() {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+  }
+
+  flushOfflineQueue() {
+    while (this.offlineQueue.length > 0) {
+      const data = this.offlineQueue.shift();
+      this.send(data);
     }
   }
 }

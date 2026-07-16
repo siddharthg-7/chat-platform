@@ -64,19 +64,17 @@ const IconSidebar = () => {
 
   return (
     <aside
-      style={{ width: expanded ? '240px' : '64px' }}
-      className="
-        flex-shrink-0
-        h-screen sticky top-0
-        flex flex-col items-center
-        py-4 gap-1
-        bg-panel
-        border-r border-border
-        z-20 transition-all duration-300 ease-in-out
-      "
+      className={`
+        flex-shrink-0 z-50 bg-panel border-border transition-all duration-300 ease-in-out
+        /* Mobile: fixed bottom nav */
+        fixed bottom-0 left-0 right-0 h-16 w-full flex flex-row items-center justify-around px-2 border-t
+        /* Desktop: vertical sticky sidebar */
+        md:relative md:h-screen md:top-0 md:flex-col md:items-center md:py-4 md:gap-1 md:border-r md:border-t-0
+      `}
+      style={window.innerWidth >= 768 ? { width: expanded ? '240px' : '64px' } : { width: '100%' }}
     >
-      {/* Logo */}
-      <div className={`mb-4 flex items-center ${expanded ? 'px-4 w-full justify-start gap-3' : 'justify-center w-10 h-10 rounded-xl'} transition-all cursor-pointer`}>
+      {/* Logo - Hidden on mobile */}
+      <div className={`hidden md:flex mb-4 items-center ${expanded ? 'px-4 w-full justify-start gap-3' : 'justify-center w-10 h-10 rounded-xl'} transition-all cursor-pointer`}>
         <img src={logo} alt="ChatPlatform" className="shrink-0 w-10 h-10" />
         {expanded && (
           <span className="font-bold tracking-tight text-foreground text-lg whitespace-nowrap overflow-hidden">
@@ -85,22 +83,22 @@ const IconSidebar = () => {
         )}
       </div>
 
-      {/* Divider */}
-      <div className={`${expanded ? 'w-[calc(100%-2rem)]' : 'w-8'} h-px bg-border mb-2 transition-all`} />
+      {/* Divider - Hidden on mobile */}
+      <div className={`hidden md:block ${expanded ? 'w-[calc(100%-2rem)]' : 'w-8'} h-px bg-border mb-2 transition-all`} />
 
       {/* Nav Items */}
-      <nav className={`flex-1 flex flex-col items-center gap-1 w-full ${expanded ? 'px-3' : 'px-2'}`}>
+      <nav className={`flex flex-row md:flex-col md:flex-1 items-center justify-around md:justify-start gap-1 w-full md:w-auto ${expanded ? 'md:px-3' : 'md:px-2'}`}>
         {NAV_ITEMS.map(({ icon: Icon, label, to }) => {
           const active = isActive(to);
           return (
-            <Tooltip key={to} label={label} disabled={expanded}>
+            <Tooltip key={to} label={label} disabled={expanded || window.innerWidth < 768}>
               <Link
                 to={to}
                 className={`
-                  relative flex items-center
-                  h-10 rounded-xl
+                  relative flex items-center justify-center
+                  h-10 w-12 md:h-10 rounded-xl
                   transition-all duration-200 group overflow-hidden shrink-0
-                  ${expanded ? 'w-full justify-start px-3' : 'w-10 justify-center px-0'}
+                  ${expanded ? 'md:w-full md:justify-start md:px-3' : 'md:w-10 md:px-0'}
                   ${active
                     ? 'bg-accent text-white shadow-glow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-glass-hover'
@@ -108,11 +106,11 @@ const IconSidebar = () => {
                 `}
               >
                 {active && !expanded && (
-                  <span className="absolute -left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-accent" />
+                  <span className="hidden md:block absolute -left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-accent" />
                 )}
-                <Icon className="h-4.5 w-4.5 shrink-0" size={18} />
+                <Icon className="h-5 w-5 md:h-4.5 md:w-4.5 shrink-0" size={18} />
                 {expanded && (
-                  <span className="ml-3 font-medium text-sm whitespace-nowrap">
+                  <span className="hidden md:inline-block ml-3 font-medium text-sm whitespace-nowrap">
                     {label}
                   </span>
                 )}
@@ -120,13 +118,25 @@ const IconSidebar = () => {
             </Tooltip>
           );
         })}
+
+        {/* User Avatar - Mobile version (inside nav) */}
+        <Link to="/profile" className={`flex md:hidden items-center justify-center h-10 w-12 rounded-xl transition-all ${isActive('/profile') ? 'bg-accent/20' : ''}`}>
+          <div className="relative shrink-0 flex items-center">
+            <Avatar
+              src={getAvatarUrl()}
+              fallback={initials}
+              className="h-8 w-8 ring-2 ring-transparent transition-all duration-200 bg-accent text-white font-semibold text-xs"
+            />
+            <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-green-500 border-2 border-panel" />
+          </div>
+        </Link>
       </nav>
 
-      {/* Divider */}
-      <div className={`${expanded ? 'w-[calc(100%-2rem)]' : 'w-8'} h-px bg-border mb-2 transition-all`} />
+      {/* Divider - Hidden on mobile */}
+      <div className={`hidden md:block ${expanded ? 'w-[calc(100%-2rem)]' : 'w-8'} h-px bg-border mb-2 transition-all`} />
 
-      {/* User Avatar */}
-      <Link to="/profile" className={`w-full flex items-center ${expanded ? 'justify-start px-4 gap-3' : 'justify-center'} cursor-pointer hover:opacity-80 transition-opacity`}>
+      {/* User Avatar - Desktop version */}
+      <Link to="/profile" className={`hidden md:flex w-full items-center ${expanded ? 'justify-start px-4 gap-3' : 'justify-center'} cursor-pointer hover:opacity-80 transition-opacity`}>
         <Tooltip label="Profile" disabled={expanded}>
           <div className="relative shrink-0 flex items-center">
             <Avatar
@@ -145,10 +155,10 @@ const IconSidebar = () => {
         )}
       </Link>
 
-      {/* Expand/Collapse Toggle — true last element */}
+      {/* Expand/Collapse Toggle - Hidden on mobile */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-8 h-8 mt-2 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-glass-hover transition-colors"
+        className="hidden md:flex w-8 h-8 mt-2 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-glass-hover transition-colors"
       >
         {expanded ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
       </button>

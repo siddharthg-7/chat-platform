@@ -17,6 +17,8 @@ import Chat from './pages/Chat';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 
+import { subscribeToPushNotifications } from './services/push.service';
+
 function AppRoutes() {
   const dispatch = useDispatch();
   const [isHydrated, setIsHydrated] = useState(!localStorage.getItem('access_token'));
@@ -34,6 +36,11 @@ function AppRoutes() {
       .getProfile()
       .then((user) => {
         dispatch(setAuthSuccess({ user }));
+        // Try to subscribe to push notifications if VAPID key is available
+        const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+        if (vapidKey) {
+          subscribeToPushNotifications(vapidKey);
+        }
       })
       .catch(() => {
         // Token is invalid / expired and refresh also failed → log out cleanly

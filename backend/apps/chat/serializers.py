@@ -47,6 +47,11 @@ class MessageSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return False
+        
+        # Use in-memory data if prefetched
+        if hasattr(obj, '_prefetched_objects_cache') and 'starred_by' in obj._prefetched_objects_cache:
+            return any(u.id == request.user.id for u in obj.starred_by.all())
+            
         return obj.starred_by.filter(id=request.user.id).exists()
 
 
@@ -67,18 +72,28 @@ class ConversationSerializer(serializers.ModelSerializer):
         ]
 
     def get_last_message(self, obj):
-        last_message = obj.messages.order_by('-created_at').first()
+        if hasattr(obj, 'prefetched_last_message'):
+            last_message = obj.prefetched_last_message
+        else:
+            last_message = obj.messages.order_by('-created_at').first()
+            
         if last_message:
             return MessageSerializer(last_message).data
         return None
 
     def get_is_muted(self, obj):
+        if hasattr(obj, 'prefetched_is_muted'):
+            return obj.prefetched_is_muted
+            
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return False
         return obj.mutes.filter(user=request.user).exists()
 
     def get_unread_count(self, obj):
+        if hasattr(obj, 'prefetched_unread_count'):
+            return obj.prefetched_unread_count
+            
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return 0
