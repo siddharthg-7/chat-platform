@@ -92,7 +92,9 @@ const Dashboard = () => {
 
   const handleQuickAction = (action) => {
     switch (action) {
-      case 'Add Contact':
+      case 'Your Contacts':
+        document.getElementById('contacts-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        break;
       case 'New Chat':
         setShowNewChatModal(true);
         break;
@@ -253,7 +255,7 @@ const Dashboard = () => {
         <div className="grid gap-4 lg:grid-cols-3">
 
           {/* Contacts Card */}
-          <motion.div className="lg:col-span-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.4 }}>
+          <motion.div id="contacts-section" className="lg:col-span-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.4 }}>
             <Card className="h-full">
               <CardHeader>
                 <div className="flex flex-row items-center justify-between">
@@ -312,7 +314,7 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="grid grid-cols-2 gap-2">
-                  {['Add Contact', 'New Chat', 'Settings', 'Support'].map((action) => (
+                  {['Your Contacts', 'New Chat', 'Settings', 'Support'].map((action) => (
                     <Button key={action} variant="outline" size="sm" className="w-full text-xs" onClick={() => handleQuickAction(action)}>
                       {action}
                     </Button>
