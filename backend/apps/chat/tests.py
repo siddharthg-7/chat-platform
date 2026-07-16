@@ -105,12 +105,19 @@ class ChatSerializerTests(TestCase):
 
 
 class ChatConsumerTests(TransactionTestCase):
-    async def setUp(self):
+    def setUp(self):
+        # TransactionTestCase.setUp must be synchronous; use asyncio.run to
+        # flush Redis so stale rate-limit / presence keys don't affect tests.
+        import asyncio
         import redis.asyncio as redis
         from django.conf import settings
-        r = redis.from_url(settings.REDIS_URL)
-        await r.flushdb()
-        await r.aclose()
+
+        async def _flush():
+            r = redis.from_url(settings.REDIS_URL)
+            await r.flushdb()
+            await r.aclose()
+
+        asyncio.run(_flush())
 
     async def test_websocket_connect_and_message(self):
         # Setup users and conversation
@@ -155,11 +162,12 @@ class ChatConsumerTests(TransactionTestCase):
         self.assertEqual(response['action'], 'user_online')
         self.assertEqual(response['user_id'], user2.id)
 
-        # Send a message with temp_id
+        # Send a message with temp_id and client_id (required by the dispatcher)
         await communicator.send_json_to({
             "action": "send_message",
             "text": "Hello consumer!",
             "temp_id": "temp-123",
+            "client_id": "client-abc-123",
             "conversation_id": conversation.id
         })
 

@@ -5,9 +5,15 @@ from .models import Profile
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
+from django.core.cache import cache
+
 
 class AccountsAPITest(APITestCase):
     def setUp(self):
+        # Clear the throttle cache before every test so rate limits don't
+        # bleed across test cases (the default locmem cache persists in-process).
+        cache.clear()
+
         self.signup_url = reverse('signup')
         self.login_url = reverse('token_obtain_pair')
         self.logout_url = reverse("logout")
