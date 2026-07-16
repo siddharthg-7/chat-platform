@@ -154,6 +154,15 @@ class SendMessageView(APIView):
             print("ERROR: Conversation not found")
             return Response({"error": "Conversation not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        from apps.accounts.models import Block
+        participants = list(conversation.participants.all())
+        if len(participants) == 2:
+            other_user = participants[0] if participants[1] == request.user else participants[1]
+            if Block.objects.filter(blocker=other_user, blocked=request.user).exists():
+                return Response({"error": "You are blocked by this user"}, status=status.HTTP_403_FORBIDDEN)
+            if Block.objects.filter(blocker=request.user, blocked=other_user).exists():
+                return Response({"error": "You have blocked this user"}, status=status.HTTP_403_FORBIDDEN)
+
         if not text and not files:
             print("ERROR: Message text or file is required")
             return Response({"error": "Message text or file is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -174,28 +183,35 @@ class SendMessageView(APIView):
 
         is_voice_note = request.data.get("is_voice_note") in ["true", True, "True"]
 
-        message = Message.objects.create(conversation=conversation, sender=request.user, text=text)
+        from django.db import transaction
+        from django.db.models import Max
 
-        if is_voice_note and files:
-            file_url = upload_attachment(files[0], files[0].name)
-            message.voice_note = file_url
-            message.save()
-        else:
-            for file in files:
-                file_url = upload_attachment(file, file.name)
-                mime_type, _ = mimetypes.guess_type(file.name)
-                if not mime_type:
-                    mime_type = "application/octet-stream"
+        with transaction.atomic():
+            max_seq = Message.objects.filter(conversation=conversation).aggregate(Max('seq_num'))['seq_num__max'] or 0
+            seq_num = max_seq + 1
+            
+            message = Message.objects.create(conversation=conversation, sender=request.user, text=text, seq_num=seq_num)
 
-                Attachment.objects.create(
-                    message=message,
-                    file_url=file_url,
-                    file_name=file.name,
-                    file_size=file.size,
-                    mime_type=mime_type
-                )
+            if is_voice_note and files:
+                file_url = upload_attachment(files[0], files[0].name)
+                message.voice_note = file_url
+                message.save(update_fields=['voice_note'])
+            else:
+                for file in files:
+                    file_url = upload_attachment(file, file.name)
+                    mime_type, _ = mimetypes.guess_type(file.name)
+                    if not mime_type:
+                        mime_type = "application/octet-stream"
 
-        conversation.save()
+                    Attachment.objects.create(
+                        message=message,
+                        file_url=file_url,
+                        file_name=file.name,
+                        file_size=file.size,
+                        mime_type=mime_type
+                    )
+
+            conversation.save()
 
         serializer = MessageSerializer(message)
 
@@ -383,3 +399,19 @@ class ToggleStarView(APIView):
         else:
             message.starred_by.add(request.user)
             return Response({"starred": True}, status=status.HTTP_200_OK)
+
+class MessageSyncView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, conversation_id):
+        since_seq = request.query_params.get('since_seq', 0)
+        try:
+            since_seq = int(since_seq)
+        except ValueError:
+            return Response({"error": "Invalid since_seq parameter"}, status=status.HTTP_400_BAD_REQUEST)
+
+        conversation = get_object_or_404(request.user.conversations, id=conversation_id)
+        messages = conversation.messages.filter(seq_num__gt=since_seq).select_related('sender', 'sender__profile').prefetch_related('attachments', 'reactions', 'starred_by').order_by('seq_num')
+        
+        serializer = MessageSerializer(messages, many=True, context={'request': request})
+        return Response(serializer.data)

@@ -13,6 +13,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.conf import settings
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 
 from .serializers import (
     SignupSerializer,
@@ -296,3 +297,40 @@ class UserSearchView(APIView):
         )
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
+
+from .models import Block, Report
+
+class BlockUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+        target_user = get_object_or_404(User, id=user_id)
+        if target_user == request.user:
+            return Response({"error": "You cannot block yourself"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        Block.objects.get_or_create(blocker=request.user, blocked=target_user)
+        return Response({"message": "User blocked successfully"}, status=status.HTTP_200_OK)
+
+class UnblockUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+        target_user = get_object_or_404(User, id=user_id)
+        Block.objects.filter(blocker=request.user, blocked=target_user).delete()
+        return Response({"message": "User unblocked successfully"}, status=status.HTTP_200_OK)
+
+class ReportUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+        target_user = get_object_or_404(User, id=user_id)
+        reason = request.data.get("reason", "").strip()
+        
+        if not reason:
+            return Response({"error": "Reason is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if target_user == request.user:
+            return Response({"error": "You cannot report yourself"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        Report.objects.create(reporter=request.user, reported=target_user, reason=reason)
+        return Response({"message": "User reported successfully"}, status=status.HTTP_201_CREATED)

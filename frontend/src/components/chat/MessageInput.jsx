@@ -105,7 +105,7 @@ const MessageInput = () => {
         wsService.sendTypingStop(activeConversation);
         isTypingRef.current = false;
       }
-    }, 2000);
+    }, 1000);
   };
 
   const handleSend = () => {
@@ -128,7 +128,7 @@ const MessageInput = () => {
     }
 
     // Standard send flow with optimistic UI update
-    const tempId = 'pending-' + Date.now();
+    const tempId = 'pending-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
     const optimisticMessage = {
       id: tempId,
       temp_id: tempId,

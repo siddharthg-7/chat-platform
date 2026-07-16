@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from channels.db import database_sync_to_async
 from channels.middleware import BaseMiddleware
+from channels.exceptions import DenyConnection
 from urllib.parse import parse_qs
 
 logger = logging.getLogger(__name__)
@@ -14,6 +15,15 @@ User = get_user_model()
 def get_user(user_id):
     try:
         return User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return AnonymousUser()
+
+async def validate_token_and_get_user(token):
+    from rest_framework_simplejwt.tokens import AccessToken
+    validated_token = AccessToken(token)
+    user_id = validated_token['user_id']
+    try:
+        return await User.objects.aget(id=user_id)
     except User.DoesNotExist:
         return AnonymousUser()
 
@@ -51,15 +61,14 @@ class JWTAuthMiddleware(BaseMiddleware):
 
         if token:
             try:
-                # Use SimpleJWT AccessToken to validate expiry, token type, and blacklist
-                from rest_framework_simplejwt.tokens import AccessToken
-                validated_token = AccessToken(token)
-                user_id = validated_token['user_id']
-                scope['user'] = await get_user(user_id)
+                scope['user'] = await validate_token_and_get_user(token)
             except Exception as e:
                 logger.warning("JWT authentication failed: %s", e)
-                scope['user'] = AnonymousUser()
+                raise DenyConnection("Authentication failed")
         else:
-            scope['user'] = AnonymousUser()
+            raise DenyConnection("No authentication token provided")
+
+        if scope['user'].is_anonymous:
+            raise DenyConnection("User is anonymous")
 
         return await super().__call__(scope, receive, send)

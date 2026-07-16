@@ -105,6 +105,13 @@ class ChatSerializerTests(TestCase):
 
 
 class ChatConsumerTests(TransactionTestCase):
+    async def setUp(self):
+        import redis.asyncio as redis
+        from django.conf import settings
+        r = redis.from_url(settings.REDIS_URL)
+        await r.flushdb()
+        await r.aclose()
+
     async def test_websocket_connect_and_message(self):
         # Setup users and conversation
         user1 = await User.objects.acreate_user(username='ws_user1', password='pw')

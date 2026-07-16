@@ -1,7 +1,9 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from .authentication import CustomTokenObtainPairView
-from .views import (SignupView, LogoutView, ProfileView, UpdateProfileDetailsView, ChangePasswordView,ForgotPasswordView,ResetPasswordView,UserSearchView)
+from .views import (SignupView, LogoutView, ProfileView, UpdateProfileDetailsView, 
+                    ChangePasswordView,ForgotPasswordView,ResetPasswordView,UserSearchView,
+                    BlockUserView, UnblockUserView, ReportUserView)
 
 urlpatterns = [
     path('signup/', SignupView.as_view(), name='signup'),
@@ -15,4 +17,7 @@ urlpatterns = [
     path('me/', ProfileView.as_view(), name='me'),
     path('profile/update/', UpdateProfileDetailsView.as_view(), name='profile_update'),
     path('users/search/', UserSearchView.as_view(), name='user-search'),
+    path('users/<int:user_id>/block/', BlockUserView.as_view(), name='block-user'),
+    path('users/<int:user_id>/unblock/', UnblockUserView.as_view(), name='unblock-user'),
+    path('users/<int:user_id>/report/', ReportUserView.as_view(), name='report-user'),
 ]

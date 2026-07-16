@@ -50,6 +50,8 @@ class WebSocketService {
     this.maxReconnectTimeout = 30000;
     this.pingInterval = null;
     this.offlineQueue = [];
+    this.unackedMessages = new Map();
+    this.typingTimers = new Map();
     this.baseUrl =
       import.meta.env.VITE_WS_URL ||
       `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/chat`;
@@ -73,11 +75,12 @@ class WebSocketService {
     const wsUrl = `${this.baseUrl}/?token=${token}`;
     this.socket = new WebSocket(wsUrl);
 
-    this.socket.onopen = () => {
+    this.socket.onopen = async () => {
       console.log('[WS] Persistent global WebSocket connected.');
       this.reconnectTimeout = 1000;
       this.startHeartbeat();
       this.flushOfflineQueue();
+      this.syncMissedMessages();
     };
 
     this.socket.onmessage = (event) => {
@@ -145,7 +148,18 @@ class WebSocketService {
           break;
         }
 
+        case 'message_delivered':
+          if (data.user_id !== currentUserId) {
+            store.dispatch(
+              updateMessageStatus({ message_id: data.message_id, status: 'delivered' })
+            );
+          }
+          break;
+
         case 'message_ack':
+          if (data.temp_id) {
+            this.unackedMessages.delete(data.temp_id);
+          }
           store.dispatch(
             confirmMessage({
               temp_id: data.temp_id,
@@ -185,10 +199,26 @@ class WebSocketService {
 
         case 'typing_start':
           store.dispatch(setTypingUser({ conversationId: data.conversation_id, userId: data.sender_id }));
+          
+          // Auto-clear typing indicator after 3s if no new typing_start arrives
+          const timerKey = `${data.conversation_id}-${data.sender_id}`;
+          if (this.typingTimers.has(timerKey)) {
+            clearTimeout(this.typingTimers.get(timerKey));
+          }
+          this.typingTimers.set(timerKey, setTimeout(() => {
+            store.dispatch(clearTypingUser({ conversationId: data.conversation_id, userId: data.sender_id }));
+            this.typingTimers.delete(timerKey);
+          }, 3000));
           break;
 
         case 'typing_stop':
           store.dispatch(clearTypingUser({ conversationId: data.conversation_id, userId: data.sender_id }));
+          
+          const stopTimerKey = `${data.conversation_id}-${data.sender_id}`;
+          if (this.typingTimers.has(stopTimerKey)) {
+            clearTimeout(this.typingTimers.get(stopTimerKey));
+            this.typingTimers.delete(stopTimerKey);
+          }
           break;
 
         case 'message_reactions_updated':
@@ -232,11 +262,16 @@ class WebSocketService {
       console.log('[WS] Global WebSocket disconnected.');
       this.socket = null;
       if (!this._intentionalClose) {
+        // Add random jitter between 0% and 30% of the timeout to prevent thundering herd
+        const jitter = this.reconnectTimeout * (Math.random() * 0.3);
+        const timeoutWithJitter = this.reconnectTimeout + jitter;
+        
         setTimeout(() => {
           if (!this._intentionalClose) {
             this.connect();
           }
-        }, this.reconnectTimeout);
+        }, timeoutWithJitter);
+        
         this.reconnectTimeout = Math.min(this.reconnectTimeout * 2, this.maxReconnectTimeout);
       }
     };
@@ -258,14 +293,28 @@ class WebSocketService {
   }
 
   sendMessage(conversationId, text, tempId, replyToId = null, voiceNote = null) {
-    return this.send({
+    const data = {
       action: 'send_message',
       conversation_id: conversationId,
       text,
       temp_id: tempId,
+      client_id: tempId, // Send tempId as client_id for backend idempotency
       reply_to_id: replyToId,
       voice_note: voiceNote,
-    });
+    };
+    
+    // Add to unacked map for retries (timeout 5s)
+    if (tempId) {
+      this.unackedMessages.set(tempId, data);
+      setTimeout(() => {
+        if (this.unackedMessages.has(tempId)) {
+          console.warn(`[WS] Message ${tempId} unacked. Retrying...`);
+          this.send(this.unackedMessages.get(tempId));
+        }
+      }, 5000);
+    }
+    
+    return this.send(data);
   }
 
   sendTypingStart(conversationId) {
@@ -346,6 +395,35 @@ class WebSocketService {
     while (this.offlineQueue.length > 0) {
       const data = this.offlineQueue.shift();
       this.send(data);
+    }
+  }
+
+  async syncMissedMessages() {
+    const state = store.getState();
+    const token = localStorage.getItem('access_token');
+    const conversations = state.chat.conversations;
+    
+    for (const conv of conversations) {
+      if (!conv.last_message) continue;
+      
+      const lastSeq = conv.last_message.seq_num || 0;
+      
+      try {
+        const res = await fetch(`/api/chat/messages/${conv.id}/sync/?since_seq=${lastSeq}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (res.ok) {
+          const newMessages = await res.json();
+          newMessages.forEach(msg => {
+            const isSelf = msg.sender.id === state.auth.user?.id;
+            store.dispatch(addMessage({ message: msg, isSelf }));
+          });
+        }
+      } catch (err) {
+        console.error('Failed to sync messages for', conv.id, err);
+      }
     }
   }
 }

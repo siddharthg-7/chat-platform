@@ -11,6 +11,7 @@ from .views import (
     GroupMemberActionView,
     GroupLeaveView,
     ToggleStarView,
+    MessageSyncView,
 )
 
 urlpatterns = [
@@ -19,6 +20,7 @@ urlpatterns = [
     path("conversations/<int:conversation_id>/", ConversationDetailView.as_view(), name="conversation-detail"),
     path("conversations/<int:conversation_id>/mute/", ToggleMuteConversationView.as_view(), name="conversation-mute"),
     path("messages/<int:conversation_id>/", MessageListView.as_view(), name="message-list"),
+    path("messages/<int:conversation_id>/sync/", MessageSyncView.as_view(), name="message-sync"),
     path("messages/<int:message_id>/react/", ToggleReactionView.as_view(), name="toggle-reaction"),
     path("send/", SendMessageView.as_view(), name="send-message"),
     path("group/<int:conversation_id>/", GroupUpdateView.as_view(), name="group-update"),

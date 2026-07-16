@@ -39,6 +39,8 @@ class ConversationMute(models.Model):
 
 
 class Message(models.Model):
+    client_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    seq_num = models.IntegerField(default=0, db_index=True)
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="messages")
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sent_messages")
     text = models.TextField(blank=True)
@@ -53,8 +55,8 @@ class Message(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
-        ordering = ["created_at"]
-        indexes = [models.Index(fields=['conversation', 'created_at'])]
+        ordering = ["seq_num", "created_at"]
+        indexes = [models.Index(fields=['conversation', 'seq_num', 'created_at'])]
 
     def __str__(self):
         if self.voice_note:
