@@ -190,6 +190,7 @@ else:
         raise ValueError("CORS_ALLOWED_ORIGINS environment variable is required in production.")
 
     CORS_ALLOWED_ORIGINS = cors_origins.split(',')
+    CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {
