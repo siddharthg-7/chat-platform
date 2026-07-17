@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ArrowRight, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import AuthLayout from '@/components/auth/AuthLayout.jsx';
 import logo from '@/assets/logo.svg';
 import { authService } from '../services/auth.service';
@@ -37,6 +39,7 @@ const Login = () => {
       // Fetch the user profile to populate state.auth.user
       const user = await authService.getProfile();
       dispatch(setAuthSuccess({ user }));
+      toast.success("Login successful!");
       navigate('/');
     } catch (err) {
       const msg =
@@ -45,11 +48,13 @@ const Login = () => {
         err.response?.data?.message ||
         (err.response?.data ? JSON.stringify(err.response.data) : 'Invalid username or password.');
       dispatch(setAuthFailure(msg));
+      toast.error(msg);
     }
   };
 
   return (
     <AuthLayout wallpaperPosition="left">
+      <ToastContainer position="top-right" autoClose={3000} />
 
       <motion.div
         initial={{ opacity: 0, y: 16 }}

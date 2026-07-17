@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ArrowRight, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import AuthLayout from '@/components/auth/AuthLayout.jsx';
 import logo from '@/assets/logo.svg';
 import { authService } from '../services/auth.service';
@@ -46,6 +48,7 @@ const Signup = () => {
       // refresh (when App.jsx's mount effect finally hydrates it).
       const fullUser = await authService.getProfile();
       dispatch(setAuthSuccess({ user: fullUser }));
+      toast.success("Account created successfully!");
       navigate('/');
     } catch (err) {
       let msg = 'Something went wrong creating your account. Please try again.';
@@ -66,11 +69,13 @@ const Signup = () => {
         }
       }
       dispatch(setAuthFailure(msg));
+      toast.error(msg);
     }
   };
  
   return (
     <AuthLayout wallpaperPosition="right">
+      <ToastContainer position="top-right" autoClose={3000} />
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
