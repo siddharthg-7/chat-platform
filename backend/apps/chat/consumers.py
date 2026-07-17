@@ -127,7 +127,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             while self.is_connected:
                 await asyncio.sleep(15)
-                if time.time() - self.last_ping > 45:
+                if time.time() - self.last_ping > 90:
                     logger.warning(f"Heartbeat timeout for user {self.user.id}, conn_id={self.connection_id}. Closing.")
                     await self.close(code=4000)
                     break
@@ -163,8 +163,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             current = await redis_client.incr(rl_key)
             if current == 1:
                 await redis_client.expire(rl_key, 1)
-            if current > 10:
-                logger.warning(f"User {user_id} hit WebSocket global rate limit. Terminating connection.")
+            if current > 50:
+                logger.warning(f"User {user_id} hit WebSocket global rate limit (burst). Terminating connection.")
                 await self.close(code=4290)
                 return False
             return True

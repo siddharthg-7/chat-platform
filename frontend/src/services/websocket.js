@@ -47,10 +47,22 @@ class WebSocketService {
   constructor() {
     this.socket = null;
     this.reconnectTimeout = 1000;
-    this.maxReconnectTimeout = 30000;
+    this.maxReconnectTimeout = 60000;
     this.pingInterval = null;
-    this.offlineQueue = [];
-    this.unackedMessages = new Map();
+    
+    // Load persisted queues from localStorage
+    try {
+      const savedQueue = localStorage.getItem('ws_offlineQueue');
+      this.offlineQueue = savedQueue ? JSON.parse(savedQueue) : [];
+      
+      const savedUnacked = localStorage.getItem('ws_unackedMessages');
+      this.unackedMessages = savedUnacked ? new Map(JSON.parse(savedUnacked)) : new Map();
+    } catch (e) {
+      console.warn("Failed to load persisted offline queues:", e);
+      this.offlineQueue = [];
+      this.unackedMessages = new Map();
+    }
+    
     this.typingTimers = new Map();
     this.baseUrl =
       import.meta.env.VITE_WS_URL ||
@@ -79,8 +91,15 @@ class WebSocketService {
       console.log('[WS] Persistent global WebSocket connected.');
       this.reconnectTimeout = 1000;
       this.startHeartbeat();
+      
+      // Ensure we sync missing messages BEFORE flushing offline queue
+      await this.syncMissedMessages();
       this.flushOfflineQueue();
-      this.syncMissedMessages();
+      
+      // Retry unacked messages
+      for (const [tempId, data] of this.unackedMessages.entries()) {
+        this.send(data);
+      }
     };
 
     this.socket.onmessage = (event) => {
@@ -159,6 +178,7 @@ class WebSocketService {
         case 'message_ack':
           if (data.temp_id) {
             this.unackedMessages.delete(data.temp_id);
+            this.persistQueues();
           }
           store.dispatch(
             confirmMessage({
@@ -288,8 +308,18 @@ class WebSocketService {
     }
     if (!this._intentionalClose && data.action === 'send_message') {
       this.offlineQueue.push(data);
+      this.persistQueues();
     }
     return false;
+  }
+  
+  persistQueues() {
+    try {
+      localStorage.setItem('ws_offlineQueue', JSON.stringify(this.offlineQueue));
+      localStorage.setItem('ws_unackedMessages', JSON.stringify(Array.from(this.unackedMessages.entries())));
+    } catch (e) {
+      console.warn("Failed to persist offline queues to localStorage:", e);
+    }
   }
 
   sendMessage(conversationId, text, tempId, replyToId = null, voiceNote = null) {
@@ -306,6 +336,7 @@ class WebSocketService {
     // Add to unacked map for retries (timeout 5s)
     if (tempId) {
       this.unackedMessages.set(tempId, data);
+      this.persistQueues();
       setTimeout(() => {
         if (this.unackedMessages.has(tempId)) {
           console.warn(`[WS] Message ${tempId} unacked. Retrying...`);
@@ -396,6 +427,7 @@ class WebSocketService {
       const data = this.offlineQueue.shift();
       this.send(data);
     }
+    this.persistQueues();
   }
 
   async syncMissedMessages() {

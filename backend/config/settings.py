@@ -249,6 +249,21 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'uvicorn.access': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
         'apps.chat': {
             'handlers': ['console'],
             'level': 'INFO',
