@@ -34,6 +34,7 @@ const ChatRightSidebar = ({ type }) => {
   const [showAddMember, setShowAddMember] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
   const [activeMemberMenu, setActiveMemberMenu] = useState(null);
+  const [fullScreenImage, setFullScreenImage] = useState(null);
 
   // Find active chat details
   const chat = conversations.find(c => c.id === activeConversation);
@@ -201,9 +202,19 @@ const ChatRightSidebar = ({ type }) => {
         <div className="flex flex-col items-center -mt-12 px-4 mb-6 shrink-0 relative">
           <div className="relative hover:scale-102 transition duration-200">
             {type === 'group_info' ? (
-              <Avatar src={chat.avatar} fallback={chat.name?.substring(0, 2)} className="h-24 w-24 border-4 border-[var(--bg-panel)] shadow-xl" />
+              <Avatar 
+                src={chat.avatar} 
+                fallback={chat.name?.substring(0, 2)} 
+                className={`h-24 w-24 border-4 border-[var(--bg-panel)] shadow-xl ${chat.avatar ? 'cursor-pointer' : ''}`} 
+                onClick={() => chat.avatar && setFullScreenImage(chat.avatar)}
+              />
             ) : (
-              <Avatar src={otherUser?.profile?.avatar} fallback={otherUser?.username?.substring(0, 2)} className="h-24 w-24 border-4 border-[var(--bg-panel)] shadow-xl" />
+              <Avatar 
+                src={otherUser?.profile?.avatar} 
+                fallback={otherUser?.username?.substring(0, 2)} 
+                className={`h-24 w-24 border-4 border-[var(--bg-panel)] shadow-xl ${otherUser?.profile?.avatar ? 'cursor-pointer' : ''}`} 
+                onClick={() => otherUser?.profile?.avatar && setFullScreenImage(otherUser.profile.avatar)}
+              />
             )}
 
             {/* Avatar edit controls (only for Group Admin) */}
@@ -416,6 +427,30 @@ const ChatRightSidebar = ({ type }) => {
         )}
 
       </div>
+
+      {/* Full Screen Image Modal */}
+      {fullScreenImage && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200"
+          onClick={() => setFullScreenImage(null)}
+        >
+          <button 
+            className="absolute top-4 right-4 p-2 text-white/70 hover:text-white bg-black/50 hover:bg-black/70 rounded-full transition-all z-[101]"
+            onClick={(e) => {
+              e.stopPropagation();
+              setFullScreenImage(null);
+            }}
+          >
+            <X size={24} />
+          </button>
+          <img 
+            src={fullScreenImage} 
+            alt="Full screen profile" 
+            className="max-h-[90vh] max-w-full object-contain rounded-lg shadow-2xl animate-scale-up" 
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 };

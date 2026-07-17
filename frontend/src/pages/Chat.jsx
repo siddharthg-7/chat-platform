@@ -111,9 +111,9 @@ const Chat = () => {
           <ChatArea messagesLoading={messagesLoading} />
         </div>
 
-        {/* Right Sidebar: Hidden completely on mobile for simplicity, or overlay (for now hidden on mobile) */}
+        {/* Right Sidebar: Overlay on mobile, adjacent on xl screens */}
         {rightSidebarOpen && (
-          <div className="w-[320px] shrink-0 border-l border-[var(--border)] h-full bg-[var(--bg-panel)] animate-slide-in hidden xl:block">
+          <div className="absolute inset-y-0 right-0 z-50 w-full sm:w-[320px] border-l border-[var(--border)] h-full bg-[var(--bg-panel)] animate-slide-in xl:relative xl:block">
             <ChatRightSidebar type={rightSidebarType} />
           </div>
         )}
