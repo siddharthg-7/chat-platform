@@ -1,4 +1,5 @@
 import { store } from '../store/store';
+import api from './api';
 import {
   addMessage,
   confirmMessage,
@@ -441,13 +442,9 @@ class WebSocketService {
       const lastSeq = conv.last_message.seq_num || 0;
       
       try {
-        const res = await fetch(`/api/chat/messages/${conv.id}/sync/?since_seq=${lastSeq}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (res.ok) {
-          const newMessages = await res.json();
+        const res = await api.get(`/chat/messages/${conv.id}/sync/?since_seq=${lastSeq}`);
+        if (res.data) {
+          const newMessages = res.data;
           newMessages.forEach(msg => {
             const isSelf = msg.sender.id === state.auth.user?.id;
             store.dispatch(addMessage({ message: msg, isSelf }));
