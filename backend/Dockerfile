@@ -8,7 +8,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     libpq-dev gcc \
     && rm -rf /var/lib/apt/lists/*
-RUN groupadd -r django && useradd -r -g django django
+RUN groupadd -r django && useradd -r -m -d /home/django -g django django
 RUN mkdir -p /app/static /app/media
 
 COPY requirements.txt /app/
