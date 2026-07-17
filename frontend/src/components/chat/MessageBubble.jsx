@@ -267,9 +267,14 @@ const MessageBubble = ({ message }) => {
                   }
 
                   // General File Download Box
+                  let downloadUrl = att.file_url;
+                  if (downloadUrl && downloadUrl.includes('res.cloudinary.com') && downloadUrl.includes('/upload/') && !downloadUrl.includes('fl_attachment')) {
+                    downloadUrl = downloadUrl.replace('/upload/', '/upload/fl_attachment/');
+                  }
+
                   return (
                     <a 
-                      href={att.file_url} 
+                      href={downloadUrl} 
                       target="_blank" 
                       rel="noopener noreferrer" 
                       key={att.id} 
