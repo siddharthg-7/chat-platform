@@ -1,12 +1,16 @@
 import React, { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Toaster } from 'sonner';
 import IconSidebar from '@/components/IconSidebar';
 import wsService from '@/services/websocket';
 
 const MainLayout = () => {
+  const location = useLocation();
   const { isAuthenticated } = useSelector((state) => state.auth);
+  const { activeConversation } = useSelector((state) => state.chat) || {};
+  
+  const isChatActive = location.pathname === '/chat' && Boolean(activeConversation);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -18,10 +22,15 @@ const MainLayout = () => {
   }, [isAuthenticated]);
 
   return (
-    <div className="flex flex-col-reverse md:flex-row h-[100dvh] w-full bg-[var(--bg-surface)] overflow-hidden text-[var(--text)] selection:bg-[var(--accent-dim)] selection:text-[var(--text)]">
+    <div className="flex flex-col-reverse md:flex-row h-[100dvh] w-full bg-[var(--bg-surface)] overflow-hidden overflow-x-hidden text-[var(--text)] selection:bg-[var(--accent-dim)] selection:text-[var(--text)]">
       <Toaster position="top-right" richColors theme="dark" />
-      <IconSidebar />
-      <main className="flex-1 overflow-hidden flex min-w-0 pb-[64px] md:pb-0">
+      
+      {/* Hide bottom navigation on mobile when viewing an active chat */}
+      <div className={isChatActive ? 'hidden md:block' : 'block md:contents'}>
+        <IconSidebar />
+      </div>
+
+      <main className={`flex-1 overflow-hidden flex min-w-0 md:pb-0 ${isChatActive ? 'pb-0' : 'pb-[64px]'}`}>
         <Outlet />
       </main>
     </div>

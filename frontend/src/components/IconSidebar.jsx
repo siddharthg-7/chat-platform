@@ -96,7 +96,7 @@ const IconSidebar = () => {
                 to={to}
                 className={`
                   relative flex items-center justify-center
-                  h-10 w-12 md:h-10 rounded-xl
+                  h-11 w-12 md:h-10 rounded-xl
                   transition-all duration-200 group overflow-hidden shrink-0
                   ${expanded ? 'md:w-full md:justify-start md:px-3' : 'md:w-10 md:px-0'}
                   ${active
@@ -120,7 +120,7 @@ const IconSidebar = () => {
         })}
 
         {/* User Avatar - Mobile version (inside nav) */}
-        <Link to="/profile" className={`flex md:hidden items-center justify-center h-10 w-12 rounded-xl transition-all ${isActive('/profile') ? 'bg-accent/20' : ''}`}>
+        <Link to="/profile" className={`flex md:hidden items-center justify-center h-11 w-12 rounded-xl transition-all ${isActive('/profile') ? 'bg-accent/20' : ''}`}>
           <div className="relative shrink-0 flex items-center">
             <Avatar
               src={getAvatarUrl()}
