@@ -13,4 +13,4 @@ daphne>=4.0.0
 black>=24.0.0
 isort>=5.13.0
 cloudinary>=1.36.0
-whitenoise>=6.5.0
+whitenoise>=6.5.0

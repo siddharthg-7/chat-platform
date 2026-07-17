@@ -9,11 +9,8 @@ import { authService } from './services/auth.service';
 import { setAuthSuccess, logout } from './store/slices/authSlice';
 import { Loader2 } from 'lucide-react';
 
-// Pages
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Chat from './pages/Chat';
 import Profile from './pages/Profile';
@@ -78,8 +75,6 @@ function AppRoutes() {
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
       </Route>
     </Routes>
   );
