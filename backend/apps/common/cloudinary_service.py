@@ -126,13 +126,21 @@ def upload_cover_photo(file_obj, user_id):
 def upload_attachment(file_obj, filename):
     """
     Uploads message attachment to Cloudinary, detecting resource type (video, image, raw).
+    Forces PDFs and other documents to 'raw' to avoid Cloudinary security blocks.
     """
     if IS_CLOUDINARY_CONFIGURED:
         try:
+            # By default, auto detects PDFs as 'image', but free tiers block PDF image delivery.
+            # We force known document types to 'raw'.
+            res_type = "auto"
+            lower_name = str(filename).lower()
+            if lower_name.endswith('.pdf') or lower_name.endswith('.doc') or lower_name.endswith('.docx') or lower_name.endswith('.txt') or lower_name.endswith('.zip'):
+                res_type = "raw"
+                
             result = cloudinary.uploader.upload(
                 file_obj,
                 folder="chat_app/attachments",
-                resource_type="auto"
+                resource_type=res_type
             )
             return result.get("secure_url")
         except Exception as e:
