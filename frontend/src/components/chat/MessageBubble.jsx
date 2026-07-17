@@ -78,33 +78,45 @@ const MessageBubble = ({ message }) => {
     setCurrentTime(time);
   };
 
-  const handleCopy = () => {
+  const handleCopy = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
     navigator.clipboard.writeText(message.text || "");
     toast.success("Copied to clipboard!");
     setShowMenu(false);
   };
 
-  const handleReply = () => {
+  const handleReply = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
     dispatch(setReplyingTo({ id: message.id, sender: message.sender, text: message.text }));
     setShowMenu(false);
   };
 
-  const handleEdit = () => {
+  const handleEdit = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
     dispatch(setEditingMessage({ id: message.id, text: message.text }));
     setShowMenu(false);
   };
 
-  const handleDeleteMe = () => {
+  const handleDeleteMe = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
     wsService.sendDeleteMessage(activeConversation, message.id, "me");
     setShowMenu(false);
   };
 
-  const handleDeleteEveryone = () => {
+  const handleDeleteEveryone = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
     wsService.sendDeleteMessage(activeConversation, message.id, "everyone");
     setShowMenu(false);
   };
 
-  const handleTogglePin = () => {
+  const handleTogglePin = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
     wsService.sendTogglePin(activeConversation, message.id);
     setShowMenu(false);
   };
@@ -345,37 +357,37 @@ const MessageBubble = ({ message }) => {
             <div className={`absolute top-full mt-1 w-44 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] py-1.5 shadow-xl z-50 animate-scale-up
               ${message.incoming ? 'left-0' : 'right-0'}`}
             >
-              <button onClick={handleReply} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--text)] hover:bg-[var(--bg-glass)] transition-all">
+              <button onMouseDown={handleReply} onClick={(e) => e.stopPropagation()} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--text)] hover:bg-[var(--bg-glass)] transition-all">
                 <CornerUpLeft className="h-3.5 w-3.5 text-[var(--text-muted)]" /> Reply
               </button>
               
               {!message.incoming && (
-                <button onClick={handleEdit} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--text)] hover:bg-[var(--bg-glass)] transition-all">
+                <button onMouseDown={handleEdit} onClick={(e) => e.stopPropagation()} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--text)] hover:bg-[var(--bg-glass)] transition-all">
                   <Edit3 className="h-3.5 w-3.5 text-[var(--text-muted)]" /> Edit Message
                 </button>
               )}
 
-              <button onClick={handleTogglePin} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--text)] hover:bg-[var(--bg-glass)] transition-all">
+              <button onMouseDown={handleTogglePin} onClick={(e) => e.stopPropagation()} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--text)] hover:bg-[var(--bg-glass)] transition-all">
                 <Pin className="h-3.5 w-3.5 text-[var(--text-muted)]" /> {message.is_pinned ? 'Unpin' : 'Pin Message'}
               </button>
 
-              <button onClick={handleToggleStar} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--text)] hover:bg-[var(--bg-glass)] transition-all">
+              <button onMouseDown={handleToggleStar} onClick={(e) => e.stopPropagation()} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--text)] hover:bg-[var(--bg-glass)] transition-all">
                 <Star className="h-3.5 w-3.5 text-[var(--text-muted)]" /> {message.starred ? 'Unstar Message' : 'Star Message'}
               </button>
 
-              <button onClick={handleCopy} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--text)] hover:bg-[var(--bg-glass)] transition-all">
+              <button onMouseDown={handleCopy} onClick={(e) => e.stopPropagation()} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--text)] hover:bg-[var(--bg-glass)] transition-all">
                 <Copy className="h-3.5 w-3.5 text-[var(--text-muted)]" /> Copy text
               </button>
 
               <div className="my-1 border-t border-[var(--border)]" />
 
-              <button onClick={handleDeleteMe} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 hover:bg-opacity-5 dark:hover:bg-red-950 dark:hover:bg-opacity-20 transition-all">
-                <Trash className="h-3.5 w-3.5" /> Delete for Me
+              <button onMouseDown={handleDeleteMe} onClick={(e) => e.stopPropagation()} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 hover:bg-opacity-5 dark:hover:bg-red-950 dark:hover:bg-opacity-20 transition-all">
+                <Trash className="h-3.5 w-3.5 pointer-events-none" /> Delete for Me
               </button>
 
               {!message.incoming && (
-                <button onClick={handleDeleteEveryone} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 hover:bg-opacity-5 dark:hover:bg-red-950 dark:hover:bg-opacity-20 transition-all">
-                  <Trash className="h-3.5 w-3.5" /> Delete for Everyone
+                <button onMouseDown={handleDeleteEveryone} onClick={(e) => e.stopPropagation()} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 hover:bg-opacity-5 dark:hover:bg-red-950 dark:hover:bg-opacity-20 transition-all">
+                  <Trash className="h-3.5 w-3.5 pointer-events-none" /> Delete for Everyone
                 </button>
               )}
             </div>
