@@ -21,3 +21,5 @@ RUN mkdir -p /app/static /app/media && chown -R django:django /app
 RUN chmod +x /app/entrypoint.sh
 
 USER django
+
+CMD ["/app/entrypoint.sh"]
