@@ -97,9 +97,19 @@ const ChatHeader = ({ chat }) => {
     }
   };
 
-  const handleBlockUser = () => {
+  const handleBlockUser = async () => {
     setMenuOpen(false);
-    toast.success(`${chat.name} has been blocked.`);
+    if (chat.isGroup) {
+      toast.error("You cannot block a group.");
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to block ${chat.name}?`)) return;
+    try {
+      await chatService.blockUser(chat.otherUserId);
+      toast.success(`${chat.name} has been blocked.`);
+    } catch {
+      toast.error("Failed to block user.");
+    }
   };
 
   const handleReportUser = () => {
@@ -107,19 +117,37 @@ const ChatHeader = ({ chat }) => {
     toast.success("Conversation reported successfully. Thank you!");
   };
 
-  const handleArchiveChat = () => {
+  const handleArchiveChat = async () => {
     setMenuOpen(false);
-    toast.success("Chat archived.");
+    try {
+      await chatService.toggleArchive(chat.id);
+      dispatch({ type: 'chat/toggleConversationArchive', payload: chat.id });
+      toast.success("Chat archive status toggled.");
+    } catch {
+      toast.error("Failed to archive chat.");
+    }
   };
 
-  const handlePinChat = () => {
+  const handlePinChat = async () => {
     setMenuOpen(false);
-    toast.success("Chat pinned to top.");
+    try {
+      await chatService.togglePin(chat.id);
+      dispatch({ type: 'chat/toggleConversationPin', payload: chat.id });
+      toast.success("Chat pin status toggled.");
+    } catch {
+      toast.error("Failed to pin chat.");
+    }
   };
 
-  const handleMarkAsUnread = () => {
+  const handleMarkAsUnread = async () => {
     setMenuOpen(false);
-    toast.success("Conversation marked as unread.");
+    try {
+      await chatService.toggleUnread(chat.id);
+      dispatch({ type: 'chat/toggleConversationUnread', payload: chat.id });
+      toast.success("Conversation unread status toggled.");
+    } catch {
+      toast.error("Failed to mark as unread.");
+    }
   };
 
   return (
@@ -214,15 +242,15 @@ const ChatHeader = ({ chat }) => {
           </button>
 
           <button className="flex w-full items-center gap-2 px-4 py-2 text-left text-xs text-[var(--text)] hover:bg-[var(--bg-glass-hover)] transition-all" onClick={handlePinChat}>
-            <Pin className="h-4 w-4 text-[var(--text-muted)]" /> Pin Chat
+            <Pin className="h-4 w-4 text-[var(--text-muted)]" /> {currentChat?.is_pinned ? "Unpin Chat" : "Pin Chat"}
           </button>
 
           <button className="flex w-full items-center gap-2 px-4 py-2 text-left text-xs text-[var(--text)] hover:bg-[var(--bg-glass-hover)] transition-all" onClick={handleArchiveChat}>
-            <Archive className="h-4 w-4 text-[var(--text-muted)]" /> Archive Chat
+            <Archive className="h-4 w-4 text-[var(--text-muted)]" /> {currentChat?.is_archived ? "Unarchive Chat" : "Archive Chat"}
           </button>
 
           <button className="flex w-full items-center gap-2 px-4 py-2 text-left text-xs text-[var(--text)] hover:bg-[var(--bg-glass-hover)] transition-all" onClick={handleMarkAsUnread}>
-            <Mail className="h-4 w-4 text-[var(--text-muted)]" /> Mark as Unread
+            <Mail className="h-4 w-4 text-[var(--text-muted)]" /> {currentChat?.is_unread ? "Mark as Read" : "Mark as Unread"}
           </button>
 
           <div className="my-1 border-t border-[var(--border)]" />

@@ -21,6 +21,8 @@ const chatSlice = createSlice({
   reducers: {
     setConversations: (state, action) => {
       state.conversations = action.payload.sort((a, b) => {
+        if (a.is_pinned && !b.is_pinned) return -1;
+        if (!a.is_pinned && b.is_pinned) return 1;
         const timeA = new Date(a.last_message?.created_at || a.updated_at || 0);
         const timeB = new Date(b.last_message?.created_at || b.updated_at || 0);
         return timeB - timeA;
@@ -86,6 +88,8 @@ const chatSlice = createSlice({
 
         // Re-sort conversation list by latest activity
         state.conversations.sort((a, b) => {
+          if (a.is_pinned && !b.is_pinned) return -1;
+          if (!a.is_pinned && b.is_pinned) return 1;
           const timeA = new Date(a.last_message?.created_at || a.updated_at || 0);
           const timeB = new Date(b.last_message?.created_at || b.updated_at || 0);
           return timeB - timeA;
@@ -188,6 +192,31 @@ const chatSlice = createSlice({
       if (conv) conv.is_muted = !conv.is_muted;
     },
 
+    toggleConversationPin: (state, action) => {
+      const conv = state.conversations.find((c) => c.id === action.payload);
+      if (conv) {
+        conv.is_pinned = !conv.is_pinned;
+        // Re-sort after pinning/unpinning
+        state.conversations.sort((a, b) => {
+          if (a.is_pinned && !b.is_pinned) return -1;
+          if (!a.is_pinned && b.is_pinned) return 1;
+          const timeA = new Date(a.last_message?.created_at || a.updated_at || 0);
+          const timeB = new Date(b.last_message?.created_at || b.updated_at || 0);
+          return timeB - timeA;
+        });
+      }
+    },
+
+    toggleConversationArchive: (state, action) => {
+      const conv = state.conversations.find((c) => c.id === action.payload);
+      if (conv) conv.is_archived = !conv.is_archived;
+    },
+
+    toggleConversationUnread: (state, action) => {
+      const conv = state.conversations.find((c) => c.id === action.payload);
+      if (conv) conv.is_unread = !conv.is_unread;
+    },
+
     setOnlineUsers: (state, action) => {
       state.onlineUsers = action.payload;
     },
@@ -255,6 +284,9 @@ export const {
   toggleMessageStarStatus,
   removeConversation,
   toggleMuteConversation,
+  toggleConversationPin,
+  toggleConversationArchive,
+  toggleConversationUnread,
   setOnlineUsers,
   addOnlineUser,
   removeOnlineUser,

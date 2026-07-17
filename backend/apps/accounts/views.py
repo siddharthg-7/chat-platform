@@ -319,6 +319,14 @@ class UnblockUserView(APIView):
         Block.objects.filter(blocker=request.user, blocked=target_user).delete()
         return Response({"message": "User unblocked successfully"}, status=status.HTTP_200_OK)
 
+class BlockedUsersListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+
+    def get_queryset(self):
+        blocked_user_ids = Block.objects.filter(blocker=self.request.user).values_list('blocked_id', flat=True)
+        return User.objects.filter(id__in=blocked_user_ids)
+
 class ReportUserView(APIView):
     permission_classes = [IsAuthenticated]
 

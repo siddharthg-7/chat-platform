@@ -1,15 +1,17 @@
 import React from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { CheckCheck } from "lucide-react";
+import { CheckCheck, Pin } from "lucide-react";
 
 const ChatListItem = ({
   contact,
   isActive,
   onClick,
+  onContextMenu
 }) => {
   return (
     <button
       onClick={onClick}
+      onContextMenu={onContextMenu}
       className={`
         relative
         mb-2
@@ -50,7 +52,8 @@ const ChatListItem = ({
           <h3 className="truncate font-semibold text-foreground">
             {contact.name}
           </h3>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            {contact.isPinned && <Pin size={10} className="text-accent" />}
             {contact.time}
           </span>
         </div>
@@ -61,12 +64,12 @@ const ChatListItem = ({
               size={15}
               className="shrink-0 text-accent"
             />
-            <p className="truncate text-sm text-muted-foreground">
+            <p className="truncate text-sm text-muted-foreground font-medium">
               {contact.lastMessage}
             </p>
           </div>
 
-          {contact.unread > 0 && (
+          {(contact.unread > 0 || contact.isUnread) && (
             <span
               className="
                 ml-3
@@ -83,7 +86,7 @@ const ChatListItem = ({
                 text-white
               "
             >
-              {contact.unread}
+              {contact.unread > 0 ? contact.unread : "!"}
             </span>
           )}
         </div>

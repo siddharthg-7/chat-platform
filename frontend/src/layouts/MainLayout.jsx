@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Toaster } from 'sonner';
 import IconSidebar from '@/components/IconSidebar';
 import wsService from '@/services/websocket';
 
@@ -23,7 +22,6 @@ const MainLayout = () => {
 
   return (
     <div className="flex flex-col-reverse md:flex-row h-[100dvh] w-full bg-[var(--bg-surface)] overflow-hidden overflow-x-hidden text-[var(--text)] selection:bg-[var(--accent-dim)] selection:text-[var(--text)]">
-      <Toaster position="top-right" richColors theme="dark" />
       
       {/* Hide bottom navigation on mobile when viewing an active chat */}
       <div className={isChatActive ? 'hidden md:block' : 'block md:contents'}>

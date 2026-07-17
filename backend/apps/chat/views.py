@@ -29,6 +29,15 @@ class ConversationListView(APIView):
             ),
             is_muted_annotated=Exists(
                 ConversationMute.objects.filter(conversation=OuterRef('pk'), user=request.user)
+            ),
+            is_pinned_annotated=Exists(
+                Conversation.objects.filter(id=OuterRef('pk'), pinned_by=request.user)
+            ),
+            is_archived_annotated=Exists(
+                Conversation.objects.filter(id=OuterRef('pk'), archived_by=request.user)
+            ),
+            is_unread_annotated=Exists(
+                Conversation.objects.filter(id=OuterRef('pk'), unread_by=request.user)
             )
         ).order_by('-updated_at')
 
@@ -51,6 +60,9 @@ class ConversationListView(APIView):
             c.prefetched_last_message = last_message_map.get(c.id)
             c.prefetched_unread_count = c.unread_count_annotated
             c.prefetched_is_muted = c.is_muted_annotated
+            c.prefetched_is_pinned = c.is_pinned_annotated
+            c.prefetched_is_archived = c.is_archived_annotated
+            c.prefetched_is_unread = c.is_unread_annotated
 
         serializer = ConversationSerializer(conversation_list, many=True, context={'request': request})
         return Response(serializer.data)
@@ -115,6 +127,41 @@ class ToggleMuteConversationView(APIView):
             mute.delete()
             return Response({"is_muted": False})
         return Response({"is_muted": True})
+
+class TogglePinConversationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, conversation_id):
+        conversation = get_object_or_404(request.user.conversations, id=conversation_id)
+        if conversation.pinned_by.filter(id=request.user.id).exists():
+            conversation.pinned_by.remove(request.user)
+            return Response({"is_pinned": False})
+        conversation.pinned_by.add(request.user)
+        return Response({"is_pinned": True})
+
+
+class ToggleArchiveConversationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, conversation_id):
+        conversation = get_object_or_404(request.user.conversations, id=conversation_id)
+        if conversation.archived_by.filter(id=request.user.id).exists():
+            conversation.archived_by.remove(request.user)
+            return Response({"is_archived": False})
+        conversation.archived_by.add(request.user)
+        return Response({"is_archived": True})
+
+
+class ToggleUnreadConversationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, conversation_id):
+        conversation = get_object_or_404(request.user.conversations, id=conversation_id)
+        if conversation.unread_by.filter(id=request.user.id).exists():
+            conversation.unread_by.remove(request.user)
+            return Response({"is_unread": False})
+        conversation.unread_by.add(request.user)
+        return Response({"is_unread": True})
 
 
 class MessagePagination(CursorPagination):
@@ -253,6 +300,13 @@ class SendMessageView(APIView):
                         }
                     }
                 )
+
+        # Unarchive for all participants (optional, but typical behavior)
+        conversation.archived_by.clear()
+
+        # Remove force-unread for sender since they just sent a message
+        if conversation.unread_by.filter(id=request.user.id).exists():
+            conversation.unread_by.remove(request.user)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

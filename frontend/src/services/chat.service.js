@@ -88,4 +88,34 @@ export const chatService = {
     const response = await api.post(`/chat/messages/${messageId}/star/`);
     return response.data;
   },
+
+  togglePin: async (conversationId) => {
+    const response = await api.patch(`/chat/conversations/${conversationId}/pin/`);
+    return response.data;
+  },
+
+  toggleArchive: async (conversationId) => {
+    const response = await api.patch(`/chat/conversations/${conversationId}/archive/`);
+    return response.data;
+  },
+
+  toggleUnread: async (conversationId) => {
+    const response = await api.patch(`/chat/conversations/${conversationId}/unread/`);
+    return response.data;
+  },
+
+  getBlockedUsers: async () => {
+    const response = await api.get('/accounts/users/blocked/');
+    return response.data.results ?? response.data;
+  },
+
+  blockUser: async (userId) => {
+    const response = await api.post(`/accounts/users/${userId}/block/`);
+    return response.data;
+  },
+
+  unblockUser: async (userId) => {
+    const response = await api.post(`/accounts/users/${userId}/unblock/`);
+    return response.data;
+  },
 };

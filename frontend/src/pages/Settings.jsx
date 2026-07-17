@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/Button';
 import { Bell, Lock, MonitorSmartphone, Volume2, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { authService } from '../services/auth.service';
+import { chatService } from '../services/chat.service';
+import { toast } from 'sonner';
+import { Avatar } from '@/components/ui/Avatar';
 
 
 const NAV_SECTIONS = [
@@ -41,6 +44,9 @@ const Settings = () => {
   const [readReceipts, setReadReceipts] = useState(true);
   const [friendRequests, setFriendRequests] = useState(true);
   const [profileVisibility, setProfileVisibility] = useState("public");
+  
+  const [blockedUsers, setBlockedUsers] = useState([]);
+  const [loadingBlocked, setLoadingBlocked] = useState(false);
 
   // Password Fields (UI Only)
   const [currentPassword, setCurrentPassword] = useState("");
@@ -135,6 +141,26 @@ const Settings = () => {
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [themeMode]);
+
+  useEffect(() => {
+    if (activeSection === 2) {
+      setLoadingBlocked(true);
+      chatService.getBlockedUsers()
+        .then(data => setBlockedUsers(data))
+        .catch(console.error)
+        .finally(() => setLoadingBlocked(false));
+    }
+  }, [activeSection]);
+
+  const handleUnblock = async (userId) => {
+    try {
+      await chatService.unblockUser(userId);
+      setBlockedUsers(prev => prev.filter(u => u.id !== userId));
+      toast.success("User unblocked successfully");
+    } catch {
+      toast.error("Failed to unblock user");
+    }
+  };
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-surface)]">
@@ -347,6 +373,37 @@ const Settings = () => {
                       </div>
                     </CardContent>
                   </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Blocked Contacts</CardTitle>
+                      <CardDescription>Manage users you have blocked from contacting you.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {loadingBlocked ? (
+                        <p className="text-sm text-[var(--text-muted)]">Loading...</p>
+                      ) : blockedUsers.length === 0 ? (
+                        <p className="text-sm text-[var(--text-muted)]">You haven't blocked anyone.</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {blockedUsers.map(user => (
+                            <div key={user.id} className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <Avatar src={user.profile?.avatar} fallback={user.username.substring(0, 2)} className="h-8 w-8" />
+                                <div>
+                                  <h4 className="text-sm font-medium text-[var(--text)]">{user.username}</h4>
+                                </div>
+                              </div>
+                              <Button variant="outline" size="sm" onClick={() => handleUnblock(user.id)}>
+                                Unblock
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
                   <Card>
                     <CardHeader>
                       <CardTitle>Change Password</CardTitle>

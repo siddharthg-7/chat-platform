@@ -22,6 +22,9 @@ class Conversation(models.Model):
     )
     avatar = models.CharField(max_length=1024, null=True, blank=True)
     cover = models.CharField(max_length=1024, null=True, blank=True)
+    pinned_by = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="pinned_conversations", blank=True)
+    archived_by = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="archived_conversations", blank=True)
+    unread_by = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="unread_conversations", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

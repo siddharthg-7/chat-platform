@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Search, Plus } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Search, Plus, Archive, Pin, Trash2, Mail, VolumeX, Volume2 } from "lucide-react";
 
 import ChatListItem from "./ChatListItem";
 import NewChatModal from "./NewChatModal";
@@ -12,6 +12,7 @@ const ChatSidebar = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null);
   const dispatch = useDispatch();
 
   const { conversations, activeConversation, onlineUsers } = useSelector((state) => state.chat);
@@ -23,8 +24,11 @@ const ChatSidebar = () => {
       const contactName = chat.is_group ? chat.name : (otherParticipant?.username || 'Unknown');
       const matchesSearch = contactName.toLowerCase().includes(search.toLowerCase());
 
+      if (filter === "archived") return matchesSearch && chat.is_archived;
+      if (chat.is_archived) return false;
+
       if (filter === "groups") return matchesSearch && chat.is_group;
-      if (filter === "unread") return matchesSearch && (chat.unread_count > 0);
+      if (filter === "unread") return matchesSearch && (chat.unread_count > 0 || chat.is_unread);
       return matchesSearch;
     })
     .map((chat) => {
@@ -39,12 +43,62 @@ const ChatSidebar = () => {
         online: isOnline,
         time: chat.last_message ? new Date(chat.last_message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
         lastMessage: chat.last_message?.text || 'No messages yet',
-        unread: chat.unread_count || 0
+        unread: chat.unread_count || 0,
+        isPinned: chat.is_pinned,
+        isArchived: chat.is_archived,
+        isUnread: chat.is_unread,
+        isMuted: chat.is_muted
       };
     });
 
-  const pinnedChats = [];
-  const recentChats = mappedChats;
+  const pinnedChats = mappedChats.filter(c => c.isPinned);
+  const recentChats = mappedChats.filter(c => !c.isPinned);
+
+  // Close context menu on outside click
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
+  }, []);
+
+  const handleContextMenu = (e, chat) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.pageX,
+      y: e.pageY,
+      chat
+    });
+    // Add haptic feedback if available on mobile
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+  };
+
+  const handleContextAction = async (action, chat) => {
+    try {
+      if (action === 'pin') {
+        await chatService.togglePin(chat.id);
+        dispatch({ type: 'chat/toggleConversationPin', payload: chat.id });
+      } else if (action === 'archive') {
+        await chatService.toggleArchive(chat.id);
+        dispatch({ type: 'chat/toggleConversationArchive', payload: chat.id });
+        if (activeConversation === chat.id) dispatch(setActiveConversation(null));
+      } else if (action === 'unread') {
+        await chatService.toggleUnread(chat.id);
+        dispatch({ type: 'chat/toggleConversationUnread', payload: chat.id });
+      } else if (action === 'mute') {
+        await chatService.toggleMute(chat.id);
+        dispatch({ type: 'chat/toggleMuteConversation', payload: chat.id });
+      } else if (action === 'delete') {
+        if (window.confirm("Delete this chat?")) {
+          await chatService.deleteConversation(chat.id);
+          dispatch({ type: 'chat/removeConversation', payload: chat.id });
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleSelectChat = (chat) => {
     dispatch(setActiveConversation(chat.id));
@@ -91,10 +145,11 @@ const ChatSidebar = () => {
             />
           </div>
 
-          <div className="mt-5 flex gap-2">
+          <div className="mt-5 flex gap-2 overflow-x-auto custom-scrollbar pb-1">
             {filterBtn("all", "All")}
             {filterBtn("groups", "Groups")}
             {filterBtn("unread", "Unread")}
+            {filterBtn("archived", "Archived")}
           </div>
         </div>
 
@@ -103,22 +158,75 @@ const ChatSidebar = () => {
             <>
               <h3 className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pinned</h3>
               {pinnedChats.map((chat) => (
-                <ChatListItem key={chat.id} contact={chat} isActive={activeConversation === chat.id} onClick={() => handleSelectChat(chat)} />
+                <ChatListItem key={chat.id} contact={chat} isActive={activeConversation === chat.id} onClick={() => handleSelectChat(chat)} onContextMenu={(e) => handleContextMenu(e, chat)} />
               ))}
             </>
           )}
 
-          <h3 className="mb-3 mt-6 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent</h3>
+          {pinnedChats.length > 0 && <h3 className="mb-3 mt-6 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent</h3>}
 
           {recentChats.length === 0 ? (
             <p className="px-2 text-sm text-muted-foreground">No conversations found.</p>
           ) : (
             recentChats.map((chat) => (
-              <ChatListItem key={chat.id} contact={chat} isActive={activeConversation === chat.id} onClick={() => handleSelectChat(chat)} />
+              <ChatListItem key={chat.id} contact={chat} isActive={activeConversation === chat.id} onClick={() => handleSelectChat(chat)} onContextMenu={(e) => handleContextMenu(e, chat)} />
             ))
           )}
         </div>
       </aside>
+
+      {/* WhatsApp-style Context Menu */}
+      {contextMenu && (
+        <div 
+          className="fixed z-50 w-48 rounded-xl border border-border bg-panel py-1 shadow-2xl animate-scale-up"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button 
+            onClick={() => { handleContextAction('unread', contextMenu.chat); setContextMenu(null); }}
+            className="flex w-full items-center gap-2 px-4 py-2 text-left text-xs text-foreground hover:bg-glass-hover transition-all"
+          >
+            <Mail className="h-4 w-4 text-muted-foreground" /> 
+            {contextMenu.chat.isUnread ? 'Mark as Read' : 'Mark as Unread'}
+          </button>
+          
+          <button 
+            onClick={() => { handleContextAction('pin', contextMenu.chat); setContextMenu(null); }}
+            className="flex w-full items-center gap-2 px-4 py-2 text-left text-xs text-foreground hover:bg-glass-hover transition-all"
+          >
+            <Pin className="h-4 w-4 text-muted-foreground" /> 
+            {contextMenu.chat.isPinned ? 'Unpin Chat' : 'Pin Chat'}
+          </button>
+          
+          <button 
+            onClick={() => { handleContextAction('mute', contextMenu.chat); setContextMenu(null); }}
+            className="flex w-full items-center gap-2 px-4 py-2 text-left text-xs text-foreground hover:bg-glass-hover transition-all"
+          >
+            {contextMenu.chat.isMuted ? (
+              <><Volume2 className="h-4 w-4 text-muted-foreground" /> Unmute</>
+            ) : (
+              <><VolumeX className="h-4 w-4 text-muted-foreground" /> Mute</>
+            )}
+          </button>
+
+          <button 
+            onClick={() => { handleContextAction('archive', contextMenu.chat); setContextMenu(null); }}
+            className="flex w-full items-center gap-2 px-4 py-2 text-left text-xs text-foreground hover:bg-glass-hover transition-all"
+          >
+            <Archive className="h-4 w-4 text-muted-foreground" /> 
+            {contextMenu.chat.isArchived ? 'Unarchive Chat' : 'Archive Chat'}
+          </button>
+
+          <div className="my-1 border-t border-border" />
+
+          <button 
+            onClick={() => { handleContextAction('delete', contextMenu.chat); setContextMenu(null); }}
+            className="flex w-full items-center gap-2 px-4 py-2 text-left text-xs text-red-500 hover:bg-red-50 hover:bg-opacity-5 dark:hover:bg-red-950 dark:hover:bg-opacity-20 transition-all"
+          >
+            <Trash2 className="h-4 w-4" /> Delete Chat
+          </button>
+        </div>
+      )}
 
       {showNewChatModal && (
         <NewChatModal onClose={() => setShowNewChatModal(false)} />

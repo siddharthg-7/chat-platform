@@ -61,6 +61,9 @@ class ConversationSerializer(serializers.ModelSerializer):
     last_message = serializers.SerializerMethodField()
     is_muted = serializers.SerializerMethodField()
     unread_count = serializers.SerializerMethodField()
+    is_pinned = serializers.SerializerMethodField()
+    is_archived = serializers.SerializerMethodField()
+    is_unread = serializers.SerializerMethodField()
 
     class Meta:
         model = Conversation
@@ -68,6 +71,7 @@ class ConversationSerializer(serializers.ModelSerializer):
             'id', 'participants', 'is_group', 'name', 'admin',
             'admins', 'avatar', 'cover',
             'last_message', 'is_muted', 'unread_count',
+            'is_pinned', 'is_archived', 'is_unread',
             'created_at', 'updated_at',
         ]
 
@@ -98,3 +102,27 @@ class ConversationSerializer(serializers.ModelSerializer):
         if not request or not request.user.is_authenticated:
             return 0
         return obj.messages.filter(is_read=False).exclude(sender=request.user).count()
+
+    def get_is_pinned(self, obj):
+        if hasattr(obj, 'prefetched_is_pinned'):
+            return obj.prefetched_is_pinned
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        return obj.pinned_by.filter(id=request.user.id).exists()
+
+    def get_is_archived(self, obj):
+        if hasattr(obj, 'prefetched_is_archived'):
+            return obj.prefetched_is_archived
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        return obj.archived_by.filter(id=request.user.id).exists()
+
+    def get_is_unread(self, obj):
+        if hasattr(obj, 'prefetched_is_unread'):
+            return obj.prefetched_is_unread
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        return obj.unread_by.filter(id=request.user.id).exists()
