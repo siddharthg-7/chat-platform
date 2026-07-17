@@ -74,14 +74,14 @@ const IconSidebar = () => {
       style={window.innerWidth >= 768 ? { width: expanded ? '240px' : '64px' } : { width: '100%' }}
     >
       {/* Logo - Hidden on mobile */}
-      <div className={`hidden md:flex mb-4 items-center ${expanded ? 'px-4 w-full justify-start gap-3' : 'justify-center w-10 h-10 rounded-xl'} transition-all cursor-pointer`}>
+      <Link to="/" className={`hidden md:flex mb-4 items-center ${expanded ? 'px-4 w-full justify-start gap-3' : 'justify-center w-10 h-10 rounded-xl'} transition-all cursor-pointer`}>
         <img src={logo} alt="ChatPlatform" className="shrink-0 w-10 h-10" />
         {expanded && (
           <span className="font-bold tracking-tight text-foreground text-lg whitespace-nowrap overflow-hidden">
             ChatPlatform
           </span>
         )}
-      </div>
+      </Link>
 
       {/* Divider - Hidden on mobile */}
       <div className={`hidden md:block ${expanded ? 'w-[calc(100%-2rem)]' : 'w-8'} h-px bg-border mb-2 transition-all`} />
