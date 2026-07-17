@@ -2,7 +2,6 @@
 
 # Ensure directories exist
 mkdir -p /app/static /app/media
-chown -R django:django /app/static /app/media
 
 # Collect static files and migrate
 echo "Collecting static files..."
@@ -13,4 +12,4 @@ python manage.py migrate
 
 # Start Gunicorn with Uvicorn workers
 echo "Starting Gunicorn..."
-exec gunicorn config.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 120
+exec gunicorn config.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --workers 2 --threads 4 --timeout 120
