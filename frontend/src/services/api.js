@@ -27,8 +27,9 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
         try {
-          // Use a new axios instance to avoid infinite loops in interceptor
-          const res = await axios.post('/api/accounts/refresh/', { refresh: refreshToken });
+          // Use a new axios instance to avoid infinite loops in interceptor, but use the correct baseURL
+          const refreshApi = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL || '/api' });
+          const res = await refreshApi.post('/accounts/refresh/', { refresh: refreshToken });
           localStorage.setItem('access_token', res.data.access);
           originalRequest.headers.Authorization = `Bearer ${res.data.access}`;
           return api(originalRequest);
